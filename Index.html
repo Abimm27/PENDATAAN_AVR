@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Ruang AVR & Kalender — Portal Sekolah</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --chalk-bg-1: #1f3b32;
+    --chalk-bg-2: #16281f;
+    --chalk-white: #f4f1e6;
+    --chalk-gold: #e8b94e;
+    --chalk-gold-dim: #c79a3a;
+    --paper: #fffdf7;
+    --paper-line: rgba(31,59,50,0.08);
+    --ink: #202b26;
+    --ink-soft: #5c675f;
+    --success: #3a8b5c;
+    --danger: #c1543a;
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    color: var(--ink);
+    background: var(--paper);
+    background-image: radial-gradient(circle, rgba(31,59,50,0.03) 1px, transparent 1px);
+    background-size: 20px 20px;
+    min-height: 100vh;
+    display: flex;
+  }
+
+  /* --- SIDEBAR NAV --- */
+  .sidebar {
+    width: 260px;
+    background: linear-gradient(160deg, var(--chalk-bg-1), var(--chalk-bg-2));
+    color: var(--chalk-white);
+    padding: 32px 24px;
+    display: flex;
+    flex-direction: column;
+    border-right: 4px solid var(--chalk-gold-dim);
+  }
+
+  .brand {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--chalk-gold);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 40px;
+  }
+  .brand .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--chalk-gold); }
+
+  .user-info { margin-bottom: 40px; }
+  .user-info p { font-size: 13px; color: rgba(244,241,230,0.6); margin-bottom: 4px; }
+  .user-info h3 { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 500; }
+  
+  .nav-menu { display: flex; flex-direction: column; gap: 12px; flex: 1; }
+  .nav-item {
+    padding: 10px 14px;
+    border-radius: 8px;
+    color: var(--chalk-white);
+    text-decoration: none;
+    font-size: 14.5px;
+    font-weight: 500;
+    transition: background 0.2s ease;
+    cursor: pointer;
+  }
+  .nav-item.active { background: rgba(255,255,255,0.1); border-left: 3px solid var(--chalk-gold); }
+  .nav-item:hover:not(.active) { background: rgba(255,255,255,0.05); }
+
+  .logout-btn {
+    margin-top: auto;
+    background: transparent;
+    border: 1px solid rgba(244,241,230,0.2);
+    color: var(--chalk-white);
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'IBM Plex Sans', sans-serif;
+    transition: all 0.2s ease;
+  }
+  .logout-btn:hover { background: rgba(193,84,58,0.2); border-color: var(--danger); color: #ffd4cc; }
+
+  /* --- MAIN CONTENT --- */
+  .main-content {
+    flex: 1;
+    padding: 40px 48px;
+    overflow-y: auto;
+  }
+
+  .page-header { margin-bottom: 32px; }
+  .page-header h1 { font-family: 'Fraunces', serif; font-size: 32px; font-weight: 600; }
+  .page-header p { color: var(--ink-soft); font-size: 15px; margin-top: 8px; }
+
+  /* Dashboard Panels (Hidden by default, toggled via JS) */
+  .panel { display: none; }
+  .panel.active { display: block; animation: fadeIn 0.3s ease forwards; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Layout for Student/Teacher (Form + Schedule) */
+  .grid-layout {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 32px;
+  }
+
+  .card {
+    background: #fff;
+    border: 1px solid var(--paper-line);
+    border-radius: var(--radius);
+    padding: 28px;
+    box-shadow: 0 4px 20px rgba(31,59,50,0.04);
+  }
+  .card h2 { font-family: 'Fraunces', serif; font-size: 20px; margin-bottom: 20px; border-bottom: 1px solid var(--paper-line); padding-bottom: 12px; }
+
+  /* Forms */
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .form-group input, .form-group type, .form-group textarea {
+    width: 100%; padding: 10px 12px;
+    border: 1.5px solid rgba(31,59,50,0.16); border-radius: 8px;
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 14px;
+  }
+  .form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--chalk-gold-dim); }
+  .btn-submit {
+    background: var(--ink); color: #fff; border: none; padding: 12px 20px;
+    border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 8px;
+  }
+
+  /* Table (Schedule & Admin) */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .data-table th { text-align: left; padding: 12px; background: rgba(31,59,50,0.03); color: var(--ink-soft); font-weight: 600; }
+  .data-table td { padding: 14px 12px; border-bottom: 1px solid var(--paper-line); }
+  .status { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; }
+  .status.approved { background: rgba(58,139,92,0.1); color: var(--success); }
+  .status.pending { background: rgba(232,185,78,0.15); color: var(--chalk-gold-dim); }
+  
+  .action-btns { display: flex; gap: 8px; }
+  .btn-sm { padding: 6px 12px; border-radius: 6px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .btn-approve { background: var(--success); color: white; }
+  .btn-reject { background: var(--danger); color: white; }
+
+  /* --- KALENDER CSS (Dari Source 3) --- */
+  .cal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+  .cal-nav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+  }
+  .cal-nav button {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    border: 1.5px solid rgba(31,59,50,0.16);
+    background: #fff;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ink);
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+  .cal-nav button:hover { background: rgba(31,59,50,0.06); border-color: rgba(31,59,50,0.28); }
+  .cal-nav button svg { width: 15px; height: 15px; }
+  .cal-nav .cal-month-label { min-width: 148px; text-align: center; font-weight: 600; color: var(--ink); }
+
+  .cal-legend {
+    display: flex; gap: 16px; flex-wrap: wrap;
+    font-size: 12px; color: var(--ink-soft);
+    margin-bottom: 16px;
+  }
+  .cal-legend span { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .legend-dot.approved { background: var(--danger); }
+  .legend-dot.pending { background: var(--chalk-gold); }
+  .legend-dot.empty { background: var(--paper); border: 1.5px solid rgba(31,59,50,0.25); }
+
+  .cal-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .cal-weekdays span {
+    text-align: center;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+  }
+
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    min-height: 120px;
+  }
+  .cal-day {
+    position: relative;
+    aspect-ratio: 1 / 0.85;
+    border-radius: 10px;
+    border: 1.5px solid rgba(31,59,50,0.12);
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 7px 8px;
+    cursor: pointer;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    color: var(--ink);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .cal-day:hover { transform: translateY(-2px); box-shadow: 0 8px 16px -8px rgba(31,59,50,0.35); }
+  .cal-day.empty-cell { visibility: hidden; cursor: default; }
+  .cal-day.today { border-color: var(--chalk-gold-dim); border-width: 2px; }
+  .cal-day .day-num { font-weight: 600; }
+  .cal-day .day-status-dot { width: 8px; height: 8px; border-radius: 2px; align-self: flex-end; }
+  .cal-day.status-approved { background: rgba(193,84,58,0.14); border-color: rgba(193,84,58,0.4); }
+  .cal-day.status-approved .day-status-dot { background: var(--danger); }
+  .cal-day.status-pending { background: rgba(232,185,78,0.18); border-color: rgba(232,185,78,0.5); }
+  .cal-day.status-pending .day-status-dot { background: var(--chalk-gold-dim); }
+  .cal-day.status-empty .day-status-dot { background: transparent; border: 1px solid rgba(31,59,50,0.2); }
+
+  .cal-loading {
+    padding: 40px 0;
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 13px;
+    grid-column: 1 / -1;
+  }
+
+  /* --- MODAL CSS (Dari Source 3) --- */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(22,40,31,0.55);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 50;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-box {
+    background: var(--paper);
+    width: 100%;
+    max-width: 420px;
+    max-height: 84vh;
+    overflow-y: auto;
+    border-radius: var(--radius);
+    padding: 26px 26px 22px;
+    position: relative;
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,0.5);
+    animation: modalIn 0.22s ease;
+  }
+  @keyframes modalIn { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }
+  .modal-close {
+    position: absolute; top: 16px; right: 16px;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    border: none;
+    background: rgba(31,59,50,0.06);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ink-soft);
+  }
+  .modal-close:hover { background: rgba(31,59,50,0.12); }
+  .modal-close svg { width: 14px; height: 14px; }
+
+  .modal-eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--chalk-gold-dim);
+  }
+  .modal-box h3 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 21px;
+    margin-top: 6px;
+  }
+  .modal-status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    margin-top: 10px;
+  }
+  .modal-status-chip.approved { background: rgba(193,84,58,0.12); color: var(--danger); }
+  .modal-status-chip.pending { background: rgba(232,185,78,0.22); color: var(--chalk-gold-dim); }
+  .modal-status-chip.empty { background: rgba(31,59,50,0.06); color: var(--ink-soft); }
+  .modal-status-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  .rundown-list { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; }
+  .rundown-item { display: flex; gap: 12px; padding: 10px 0; border-top: 1px dashed var(--paper-line); }
+  .rundown-item:first-child { border-top: none; }
+  .rundown-time {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--chalk-gold-dim);
+    min-width: 78px;
+    padding-top: 1px;
+  }
+  .rundown-info h4 { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+  .rundown-info p { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+  .rundown-empty { margin-top: 18px; font-size: 13px; color: var(--ink-soft); text-align: center; padding: 20px 0; }
+
+</style>
+</head>
+<body>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span>SIM AVR</div>
+    <div class="user-info">
+      <p>Masuk sebagai</p>
+      <h3 id="displayRole">Memuat...</h3>
+    </div>
+    <nav class="nav-menu">
+      <div class="nav-item active" id="btnDashboard">Dashboard Ruang AVR</div>
+      <!-- Menu Baru Kalender -->
+      <div class="nav-item" id="btnKalender">Kalender Kegiatan</div>
+      <div class="nav-item">Panduan Penggunaan</div>
+    </nav>
+    <button class="logout-btn" id="logoutBtn">Keluar / Ganti Akun</button>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    
+    <!-- HEADER -->
+    <header class="page-header">
+      <h1 id="pageTitle">Portal Reservasi Audio Visual</h1>
+      <p id="pageSubtitle">Cek ketersediaan jadwal dan ajukan permohonan pemakaian ruang AVR.</p>
+    </header>
+
+    <!-- PANEL 1: SISWA / GURU (DASHBOARD) -->
+    <div id="userPanel" class="panel">
+      <div class="grid-layout">
+        <div class="card">
+          <h2>Formulir Peminjaman</h2>
+          <form id="reservationForm">
+            <div class="form-group">
+              <label>Tanggal Pemakaian</label>
+              <input type="date" required>
+            </div>
+            <div style="display:flex; gap:16px;">
+              <div class="form-group" style="flex:1;">
+                <label>Jam Mulai</label>
+                <input type="time" required>
+              </div>
+              <div class="form-group" style="flex:1;">
+                <label>Jam Selesai</label>
+                <input type="time" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Keperluan / Acara</label>
+              <textarea rows="3" placeholder="Contoh: Rapat OSIS, Presentasi Kelas..." required></textarea>
+            </div>
+            <button type="submit" class="btn-submit">Ajukan Reservasi</button>
+          </form>
+        </div>
+        <div class="card">
+          <h2>Jadwal Mendatang Terkonfirmasi</h2>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Waktu</th>
+                <th>Kegiatan</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>05 Mei 2026</strong><br><span style="color:#5c675f; font-size:12px;">14:00 - 16:00</span></td>
+                <td>Klub Sains - Nobar Film Dokumenter Fisika</td>
+                <td><span class="status approved">Disetujui</span></td>
+              </tr>
+              <tr>
+                <td><strong>08 Mei 2026</strong><br><span style="color:#5c675f; font-size:12px;">15:30 - 17:30</span></td>
+                <td>Komunitas Jejepangan - Screening Film Umamusume</td>
+                <td><span class="status approved">Disetujui</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANEL 2: ADMIN (DASHBOARD) -->
+    <div id="adminPanel" class="panel">
+      <div class="card">
+        <h2>Daftar Permohonan Menunggu Persetujuan</h2>
+        <table class="data-table" style="margin-top: 16px;">
+          <thead>
+            <tr>
+              <th>Peminjam</th>
+              <th>Waktu Penggunaan</th>
+              <th>Keperluan Acara</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Bagas (Siswa)</strong><br><span style="color:#5c675f; font-size:12px;">Kls 10 IPA</span></td>
+              <td><strong>12 Mei 2026</strong><br><span style="color:#5c675f; font-size:12px;">10:00 - 12:00</span></td>
+              <td>Kumpul kakawanan untuk bahas tugas proyek video akhir tahun.</td>
+              <td>
+                <div class="action-btns">
+                  <button class="btn-sm btn-approve">Setujui</button>
+                  <button class="btn-sm btn-reject">Tolak</button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Pak Budi (Guru)</strong><br><span style="color:#5c675f; font-size:12px;">NIP: 1980...</span></td>
+              <td><strong>14 Mei 2026</strong><br><span style="color:#5c675f; font-size:12px;">08:00 - 10:00</span></td>
+              <td>Ujian Praktik Kesenian</td>
+              <td>
+                <div class="action-btns">
+                  <button class="btn-sm btn-approve">Setujui</button>
+                  <button class="btn-sm btn-reject">Tolak</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PANEL 3: KALENDER (BARU DITAMBAHKAN) -->
+    <div id="kalenderPanel" class="panel">
+      <div class="card" style="max-width: 980px; margin: 0 auto;">
+        <div class="cal-head">
+          <div class="cal-title">
+            <h2 style="border:none; margin-bottom:0; padding-bottom:0;">Kalender Kegiatan Akademik</h2>
+          </div>
+          <div class="cal-nav">
+            <button id="prevMonth" aria-label="Bulan sebelumnya" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 6l-6 6 6 6"/></svg>
+            </button>
+            <span class="cal-month-label" id="calMonthLabel">—</span>
+            <button id="nextMonth" aria-label="Bulan berikutnya" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 6l6 6-6 6"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="cal-legend">
+          <span><span class="legend-dot approved"></span>Approved</span>
+          <span><span class="legend-dot pending"></span>Pending</span>
+          <span><span class="legend-dot empty"></span>Tidak ada jadwal</span>
+        </div>
+
+        <div class="cal-weekdays">
+          <span>Min</span><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span>
+        </div>
+
+        <div class="cal-grid" id="calGrid">
+          <div class="cal-loading">Memuat kalender...</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL KALENDER: rundown waktu untuk tanggal yang diklik -->
+  <div class="modal-overlay" id="dayModal">
+    <div class="modal-box">
+      <button class="modal-close" id="modalClose" aria-label="Tutup" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+      <span class="modal-eyebrow">Rundown Harian</span>
+      <h3 id="modalDate">—</h3>
+      <span class="modal-status-chip" id="modalStatusChip"><span class="dot"></span><span id="modalStatusText">—</span></span>
+
+      <div class="rundown-list" id="rundownList"></div>
+      <div class="rundown-empty" id="rundownEmpty" style="display:none;">Tidak ada jadwal untuk tanggal ini.</div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // 1. Inisialisasi Role & Sesi Login
+      const savedRole = localStorage.getItem('userRole');
+      if (!savedRole) {
+        alert("Kamu belum login! Mengarahkan kembali ke halaman login...");
+        window.location.href = 'login.html';
+        return; 
+      }
+      document.getElementById('displayRole').textContent = savedRole;
+
+      // 2. Navigasi Sidebar dan Panel
+      const btnDashboard = document.getElementById('btnDashboard');
+      const btnKalender = document.getElementById('btnKalender');
+      
+      const userPanel = document.getElementById('userPanel');
+      const adminPanel = document.getElementById('adminPanel');
+      const kalenderPanel = document.getElementById('kalenderPanel');
+      
+      const pageTitle = document.getElementById('pageTitle');
+      const pageSubtitle = document.getElementById('pageSubtitle');
+      const navItems = document.querySelectorAll('.nav-item');
+
+      // Tampilkan Dashboard yang sesuai (Admin atau Siswa/Guru) secara default
+      if (savedRole === 'Admin') adminPanel.classList.add('active');
+      else userPanel.classList.add('active');
+
+      function hideAllPanels() {
+        userPanel.classList.remove('active');
+        adminPanel.classList.remove('active');
+        kalenderPanel.classList.remove('active');
+        navItems.forEach(item => item.classList.remove('active'));
+      }
+
+      // Event Listener Sidebar: Dashboard
+      btnDashboard.addEventListener('click', function() {
+        hideAllPanels();
+        btnDashboard.classList.add('active');
+        pageTitle.textContent = "Portal Reservasi Audio Visual";
+        pageSubtitle.textContent = "Cek ketersediaan jadwal dan ajukan permohonan pemakaian ruang AVR.";
+        
+        if (savedRole === 'Admin') adminPanel.classList.add('active');
+        else userPanel.classList.add('active');
+      });
+
+      // Event Listener Sidebar: Kalender
+      btnKalender.addEventListener('click', function() {
+        hideAllPanels();
+        btnKalender.classList.add('active');
+        pageTitle.textContent = "Kalender Kegiatan";
+        pageSubtitle.textContent = "Lihat agenda sekolah, batas waktu tugas, dan jadwal penting lainnya.";
+        kalenderPanel.classList.add('active');
+        
+        // Panggil render kalender jika belum di render
+        renderCalendar(currentYear, currentMonth);
+      });
+
+      // 3. Tombol Logout
+      document.getElementById('logoutBtn').addEventListener('click', function() {
+        localStorage.removeItem('userRole');
+        window.location.href = 'login.html';
+      });
+
+      // ================== LOGIKA KALENDER (Dari Source 3) ==================
+      const API_BASE_URL = 'https://api.sekolah-nusantara.sch.id/kalender';
+      const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+      const dayNamesFull = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+
+      let currentRole = savedRole.toLowerCase();
+      let currentYear = new Date().getFullYear();
+      let currentMonth = new Date().getMonth();
+      let currentMonthData = {};
+
+      function formatDateKey(year, month, day){
+        const mm = String(month + 1).padStart(2, '0');
+        const dd = String(day).padStart(2, '0');
+        return `${year}-${mm}-${dd}`;
+      }
+
+      function formatReadableDate(dateStr){
+        const [y, m, d] = dateStr.split('-').map(Number);
+        const dateObj = new Date(y, m - 1, d);
+        return `${dayNamesFull[dateObj.getDay()]}, ${d} ${monthNames[m - 1]} ${y}`;
+      }
+
+      async function fetchCalendarData(year, month, role){
+        try{
+          const response = await fetch(`${API_BASE_URL}?tahun=${year}&bulan=${month + 1}&role=${role}`, {
+            method: 'GET', headers: { 'Accept': 'application/json' }
+          });
+          if(!response.ok) throw new Error('Status ' + response.status);
+          return await response.json();
+        }catch(err){
+          // Fallback ke data contoh jika API belum siap
+          return generateMockMonthData(year, month, role);
+        }
+      }
+
+      function generateMockMonthData(year, month, role){
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const data = {};
+        const approvedItems = role === 'guru'
+          ? [{ time:'07:00 - 08:30', title:'Mengajar Kelas X-A', note:'Materi: Aljabar Linear' }]
+          : [{ time:'07:00 - 08:30', title:'Matematika', note:'Bab Trigonometri' }];
+        const pendingItems = role === 'guru'
+          ? [{ time:'13:00 - 14:00', title:'Pengajuan Cuti', note:'Menunggu persetujuan' }]
+          : [{ time:'14:00 - 15:00', title:'Ekstrakurikuler', note:'Menunggu konfirmasi pelatih' }];
+
+        for(let d = 1; d <= daysInMonth; d++){
+          const seed = (d * 7 + month * 3) % 6;
+          const dateStr = formatDateKey(year, month, d);
+          if(seed === 0 || seed === 1){ data[dateStr] = { status: 'approved', items: approvedItems }; } 
+          else if(seed === 2){ data[dateStr] = { status: 'pending', items: pendingItems }; } 
+          else { data[dateStr] = { status: 'empty', items: [] }; }
+        }
+        return data;
+      }
+
+      async function renderCalendar(year, month){
+        const grid = document.getElementById('calGrid');
+        document.getElementById('calMonthLabel').textContent = `${monthNames[month]} ${year}`;
+        grid.innerHTML = '<div class="cal-loading">Memuat kalender...</div>';
+
+        const monthData = await fetchCalendarData(year, month, currentRole);
+        currentMonthData = monthData;
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const todayStr = formatDateKey(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+
+        let html = '';
+        for(let i = 0; i < firstDay; i++){ html += '<div class="cal-day empty-cell"></div>'; }
+        for(let d = 1; d <= daysInMonth; d++){
+          const dateStr = formatDateKey(year, month, d);
+          const info = monthData[dateStr] || { status: 'empty', items: [] };
+          const isToday = dateStr === todayStr;
+          html += `
+            <div class="cal-day status-${info.status}${isToday ? ' today' : ''}" data-date="${dateStr}">
+              <span class="day-num">${d}</span>
+              <span class="day-status-dot"></span>
+            </div>`;
+        }
+        grid.innerHTML = html;
+
+        grid.querySelectorAll('.cal-day:not(.empty-cell)').forEach(cell => {
+          cell.addEventListener('click', () => openDayModal(cell.dataset.date));
+        });
+      }
+
+      // Logika Modal
+      function setStatusChip(status){
+        const chip = document.getElementById('modalStatusChip');
+        const text = document.getElementById('modalStatusText');
+        chip.className = 'modal-status-chip ' + status;
+        text.textContent = status === 'approved' ? 'Approved' : status === 'pending' ? 'Pending' : 'Belum ada jadwal';
+      }
+
+      function renderRundown(items){
+        const list = document.getElementById('rundownList');
+        const empty = document.getElementById('rundownEmpty');
+        if(!items || items.length === 0){
+          list.innerHTML = '';
+          empty.style.display = 'block';
+          return;
+        }
+        empty.style.display = 'none';
+        list.innerHTML = items.map(item => `
+          <div class="rundown-item">
+            <div class="rundown-time">${item.time}</div>
+            <div class="rundown-info">
+              <h4>${item.title}</h4>
+              <p>${item.note || ''}</p>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      function openDayModal(dateStr){
+        const overlay = document.getElementById('dayModal');
+        const info = currentMonthData[dateStr] || { status: 'empty', items: [] };
+
+        document.getElementById('modalDate').textContent = formatReadableDate(dateStr);
+        setStatusChip(info.status);
+        renderRundown(info.items);
+        overlay.classList.add('show');
+      }
+
+      function closeDayModal(){ document.getElementById('dayModal').classList.remove('show'); }
+
+      document.getElementById('modalClose').addEventListener('click', closeDayModal);
+      document.getElementById('dayModal').addEventListener('click', (e) => {
+        if(e.target.id === 'dayModal') closeDayModal();
+      });
+
+      // Kontrol navigasi bulan Kalender
+      document.getElementById('prevMonth').addEventListener('click', () => {
+        currentMonth--;
+        if(currentMonth < 0){ currentMonth = 11; currentYear--; }
+        renderCalendar(currentYear, currentMonth);
+      });
+      document.getElementById('nextMonth').addEventListener('click', () => {
+        currentMonth++;
+        if(currentMonth > 11){ currentMonth = 0; currentYear++; }
+        renderCalendar(currentYear, currentMonth);
+      });
+
+      // Mencegah form reset page saat diuji coba (Bawaan Source 4)
+      document.getElementById('reservationForm')?.addEventListener('submit', function(e) {
+          e.preventDefault();
+          alert("Permohonan reservasi berhasil dikirim! Menunggu persetujuan admin.");
+          this.reset();
+      });
+    });
+  </script>
+</body>
+</html>

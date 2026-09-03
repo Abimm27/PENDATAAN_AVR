@@ -1,830 +1,206 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard Ruang AVR & Kalender — Portal Sekolah</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --chalk-bg-1: #1f3b32;
-    --chalk-bg-2: #16281f;
-    --chalk-white: #f4f1e6;
-    --chalk-gold: #e8b94e;
-    --chalk-gold-dim: #c79a3a;
-    --paper: #fffdf7;
-    --paper-line: rgba(31,59,50,0.08);
-    --ink: #202b26;
-    --ink-soft: #5c675f;
-    --success: #3a8b5c;
-    --danger: #c1543a;
-    --radius: 12px;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    font-family: 'IBM Plex Sans', sans-serif;
-    color: var(--ink);
-    background: var(--paper);
-    background-image: radial-gradient(circle, rgba(31,59,50,0.03) 1px, transparent 1px);
-    background-size: 20px 20px;
-    min-height: 100vh;
-    display: flex;
-  }
-
-  /* --- SIDEBAR NAV --- */
-  .sidebar {
-    width: 260px;
-    background: linear-gradient(160deg, var(--chalk-bg-1), var(--chalk-bg-2));
-    color: var(--chalk-white);
-    padding: 32px 24px;
-    display: flex;
-    flex-direction: column;
-    border-right: 4px solid var(--chalk-gold-dim);
-  }
-
-  .brand {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--chalk-gold);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 40px;
-  }
-  .brand .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--chalk-gold); }
-
-  .user-info { margin-bottom: 40px; }
-  .user-info p { font-size: 13px; color: rgba(244,241,230,0.6); margin-bottom: 4px; }
-  .user-info h3 { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 500; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal SIM AVR</title>
   
-  .nav-menu { display: flex; flex-direction: column; gap: 12px; flex: 1; }
-  .nav-item {
-    padding: 10px 14px;
-    border-radius: 8px;
-    color: var(--chalk-white);
-    text-decoration: none;
-    font-size: 14.5px;
-    font-weight: 500;
-    transition: background 0.2s ease;
-    cursor: pointer;
-  }
-  .nav-item.active { background: rgba(255,255,255,0.1); border-left: 3px solid var(--chalk-gold); }
-  .nav-item:hover:not(.active) { background: rgba(255,255,255,0.05); }
+  <!-- SDK Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
-  .logout-btn {
-    margin-top: auto;
-    background: transparent;
-    border: 1px solid rgba(244,241,230,0.2);
-    color: var(--chalk-white);
-    padding: 10px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-family: 'IBM Plex Sans', sans-serif;
-    transition: all 0.2s ease;
-  }
-  .logout-btn:hover { background: rgba(193,84,58,0.2); border-color: var(--danger); color: #ffd4cc; }
-
-  /* --- MAIN CONTENT --- */
-  .main-content {
-    flex: 1;
-    padding: 40px 48px;
-    overflow-y: auto;
-  }
-
-  .page-header { margin-bottom: 32px; }
-  .page-header h1 { font-family: 'Fraunces', serif; font-size: 32px; font-weight: 600; }
-  .page-header p { color: var(--ink-soft); font-size: 15px; margin-top: 8px; }
-
-  /* Dashboard Panels */
-  .panel { display: none; }
-  .panel.active { display: block; animation: fadeIn 0.3s ease forwards; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-  .grid-layout {
-    display: grid;
-    grid-template-columns: 1fr 1.2fr;
-    gap: 32px;
-  }
-
-  .card {
-    background: #fff;
-    border: 1px solid var(--paper-line);
-    border-radius: var(--radius);
-    padding: 28px;
-    box-shadow: 0 4px 20px rgba(31,59,50,0.04);
-  }
-  .card h2 { font-family: 'Fraunces', serif; font-size: 20px; margin-bottom: 20px; border-bottom: 1px solid var(--paper-line); padding-bottom: 12px; }
-
-  /* Forms */
-  .form-group { margin-bottom: 16px; }
-  .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
-  .form-group input, .form-group textarea {
-    width: 100%; padding: 10px 12px;
-    border: 1.5px solid rgba(31,59,50,0.16); border-radius: 8px;
-    font-family: 'IBM Plex Sans', sans-serif; font-size: 14px;
-  }
-  .form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--chalk-gold-dim); }
-  .btn-submit {
-    background: var(--ink); color: #fff; border: none; padding: 12px 20px;
-    border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 8px;
-  }
-  .btn-submit:hover { background: #32463e; }
-
-  /* Table */
-  .data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  .data-table th { text-align: left; padding: 12px; background: rgba(31,59,50,0.03); color: var(--ink-soft); font-weight: 600; }
-  .data-table td { padding: 14px 12px; border-bottom: 1px solid var(--paper-line); }
-  .status { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; }
-  .status.approved { background: rgba(58,139,92,0.1); color: var(--success); }
-  .status.pending { background: rgba(232,185,78,0.15); color: var(--chalk-gold-dim); }
-  
-  .action-btns { display: flex; gap: 8px; }
-  .btn-sm { padding: 6px 12px; border-radius: 6px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; }
-  .btn-approve { background: var(--success); color: white; }
-  .btn-approve:hover { background: #2f734b; }
-  .btn-reject { background: var(--danger); color: white; }
-  .btn-reject:hover { background: #a5452f; }
-
-  /* --- KALENDER CSS --- */
-  .cal-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 18px;
-    flex-wrap: wrap;
-    gap: 14px;
-  }
-  .cal-nav {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
-  }
-  .cal-nav button {
-    width: 32px; height: 32px;
-    border-radius: 8px;
-    border: 1.5px solid rgba(31,59,50,0.16);
-    background: #fff;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    color: var(--ink);
-    transition: background 0.2s ease, border-color 0.2s ease;
-  }
-  .cal-nav button:hover { background: rgba(31,59,50,0.06); border-color: rgba(31,59,50,0.28); }
-  .cal-nav button svg { width: 15px; height: 15px; }
-  .cal-nav .cal-month-label { min-width: 148px; text-align: center; font-weight: 600; color: var(--ink); }
-
-  .cal-legend {
-    display: flex; gap: 16px; flex-wrap: wrap;
-    font-size: 12px; color: var(--ink-soft);
-    margin-bottom: 16px;
-  }
-  .cal-legend span { display: flex; align-items: center; gap: 6px; }
-  .legend-dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
-  .legend-dot.approved { background: var(--success); }
-  .legend-dot.pending { background: var(--chalk-gold); }
-  .legend-dot.empty { background: var(--paper); border: 1.5px solid rgba(31,59,50,0.25); }
-
-  .cal-weekdays {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 6px;
-    margin-bottom: 6px;
-  }
-  .cal-weekdays span {
-    text-align: center;
-    font-size: 11.5px;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    color: var(--ink-soft);
-    text-transform: uppercase;
-  }
-
-  .cal-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 6px;
-    min-height: 120px;
-  }
-  .cal-day {
-    position: relative;
-    aspect-ratio: 1 / 0.85;
-    border-radius: 10px;
-    border: 1.5px solid rgba(31,59,50,0.12);
-    background: #fff;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: space-between;
-    padding: 7px 8px;
-    cursor: pointer;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12.5px;
-    color: var(--ink);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-  }
-  .cal-day:hover { transform: translateY(-2px); box-shadow: 0 8px 16px -8px rgba(31,59,50,0.35); }
-  .cal-day.empty-cell { visibility: hidden; cursor: default; }
-  .cal-day.today { border-color: var(--chalk-gold-dim); border-width: 2px; }
-  .cal-day .day-num { font-weight: 600; }
-  .cal-day .day-status-dot { width: 8px; height: 8px; border-radius: 2px; align-self: flex-end; }
-  .cal-day.status-approved { background: rgba(58,139,92,0.1); border-color: rgba(58,139,92,0.4); }
-  .cal-day.status-approved .day-status-dot { background: var(--success); }
-  .cal-day.status-pending { background: rgba(232,185,78,0.18); border-color: rgba(232,185,78,0.5); }
-  .cal-day.status-pending .day-status-dot { background: var(--chalk-gold-dim); }
-  .cal-day.status-empty .day-status-dot { background: transparent; border: 1px solid rgba(31,59,50,0.2); }
-
-  .cal-loading {
-    padding: 40px 0;
-    text-align: center;
-    color: var(--ink-soft);
-    font-size: 13px;
-    grid-column: 1 / -1;
-  }
-
-  /* --- MODAL CSS --- */
-  .modal-overlay {
-    display: none;
-    position: fixed; inset: 0;
-    background: rgba(22,40,31,0.55);
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    z-index: 50;
-  }
-  .modal-overlay.show { display: flex; }
-  .modal-box {
-    background: var(--paper);
-    width: 100%;
-    max-width: 420px;
-    max-height: 84vh;
-    overflow-y: auto;
-    border-radius: var(--radius);
-    padding: 26px 26px 22px;
-    position: relative;
-    box-shadow: 0 30px 60px -20px rgba(0,0,0,0.5);
-    animation: modalIn 0.22s ease;
-  }
-  @keyframes modalIn { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }
-  .modal-close {
-    position: absolute; top: 16px; right: 16px;
-    width: 28px; height: 28px;
-    border-radius: 8px;
-    border: none;
-    background: rgba(31,59,50,0.06);
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    color: var(--ink-soft);
-  }
-  .modal-close:hover { background: rgba(31,59,50,0.12); }
-  .modal-close svg { width: 14px; height: 14px; }
-
-  .modal-eyebrow {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--chalk-gold-dim);
-  }
-  .modal-box h3 {
-    font-family: 'Fraunces', serif;
-    font-weight: 500;
-    font-size: 21px;
-    margin-top: 6px;
-  }
-  .modal-status-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11.5px;
-    font-weight: 600;
-    padding: 4px 10px;
-    border-radius: 999px;
-    margin-top: 10px;
-  }
-  .modal-status-chip.approved { background: rgba(58,139,92,0.12); color: var(--success); }
-  .modal-status-chip.pending { background: rgba(232,185,78,0.22); color: var(--chalk-gold-dim); }
-  .modal-status-chip.empty { background: rgba(31,59,50,0.06); color: var(--ink-soft); }
-  .modal-status-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-
-  .rundown-list { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; }
-  .rundown-item { display: flex; gap: 12px; padding: 10px 0; border-top: 1px dashed var(--paper-line); }
-  .rundown-item:first-child { border-top: none; }
-  .rundown-time {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-    color: var(--chalk-gold-dim);
-    min-width: 78px;
-    padding-top: 1px;
-  }
-  .rundown-info h4 { font-size: 13.5px; font-weight: 600; color: var(--ink); }
-  .rundown-info p { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
-  .rundown-empty { margin-top: 18px; font-size: 13px; color: var(--ink-soft); text-align: center; padding: 20px 0; }
-</style>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f7f6; }
+    .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    input, button { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+    button { background-color: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; }
+    button:hover { background-color: #0056b3; }
+    .logout-btn { background-color: #dc3545; }
+    .logout-btn:hover { background-color: #c82333; }
+    hr { margin: 20px 0; }
+  </style>
 </head>
 <body>
 
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="brand"><span class="dot"></span>SIM AVR</div>
-    <div class="user-info">
-      <p>Masuk sebagai</p>
-      <h3 id="displayRole">Memuat...</h3>
-    </div>
-    <nav class="nav-menu">
-      <div class="nav-item active" id="btnDashboard">Dashboard Ruang AVR</div>
-      <div class="nav-item" id="btnKalender">Kalender Kegiatan</div>
-      <div class="nav-item">Panduan Penggunaan</div>
-    </nav>
-    <button class="logout-btn" id="logoutBtn">Keluar / Ganti Akun</button>
-  </aside>
-
-  <!-- MAIN CONTENT -->
-  <main class="main-content">
-    
-    <!-- HEADER -->
-    <header class="page-header">
-      <h1 id="pageTitle">Portal Reservasi Audio Visual</h1>
-      <p id="pageSubtitle">Cek ketersediaan jadwal dan ajukan permohonan pemakaian ruang AVR.</p>
-    </header>
-
-    <!-- PANEL 1: SISWA / GURU (DASHBOARD) -->
-    <div id="userPanel" class="panel">
-      <div class="grid-layout">
-        <div class="card">
-          <h2>Formulir Peminjaman</h2>
-          <form id="reservationForm">
-            <div class="form-group">
-              <label>Tanggal Pemakaian</label>
-              <input type="date" id="tanggalInput" required>
-            </div>
-            <div style="display:flex; gap:16px;">
-              <div class="form-group" style="flex:1;">
-                <label>Jam Mulai</label>
-                <input type="time" id="jamMulaiInput" required>
-              </div>
-              <div class="form-group" style="flex:1;">
-                <label>Jam Selesai</label>
-                <input type="time" id="jamSelesaiInput" required>
-              </div>
-            </div>
-            <div class="form-group">
-              <label>Keperluan / Acara</label>
-              <textarea id="keperluanInput" rows="3" placeholder="Contoh: Rapat OSIS, Presentasi Kelas..." required></textarea>
-            </div>
-            <button type="submit" class="btn-submit">Ajukan Reservasi</button>
-          </form>
-        </div>
-        <div class="card">
-          <h2>Jadwal Mendatang Terkonfirmasi</h2>
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Waktu</th>
-                <th>Kegiatan</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="approvedSchedulesContainer">
-              <tr>
-                <td colspan="3" style="text-align: center; color: var(--ink-soft);">Memuat jadwal terkonfirmasi...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+  <div class="container">
+    <!-- HALAMAN LOGIN -->
+    <div id="login-section">
+      <h2>Login Portal AVR</h2>
+      <p>Masukkan NISN / ID Anda untuk masuk ke sistem.</p>
+      <input type="text" id="inputNisn" placeholder="Ketik NISN / ID di sini...">
+      <button onclick="handleLogin()">Masuk</button>
+      <p id="statusLogin" style="color: red; font-weight: bold; text-align: center;"></p>
     </div>
 
-    <!-- PANEL 2: ADMIN (DASHBOARD) -->
-    <div id="adminPanel" class="panel">
-      <div class="card">
-        <h2>Daftar Permohonan Menunggu Persetujuan</h2>
-        <table class="data-table" style="margin-top: 16px;">
-          <thead>
-            <tr>
-              <th>Peminjam</th>
-              <th>Waktu Penggunaan</th>
-              <th>Keperluan Acara</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="adminRequestsContainer">
-            <tr>
-              <td colspan="4" style="text-align: center; color: var(--ink-soft);">Memuat permohonan masuk...</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <!-- HALAMAN DASHBOARD -->
+    <div id="dashboard-section" style="display: none;">
+      <h2 id="welcomeText"></h2>
+      <p id="infoKelas"></p>
+      <button class="logout-btn" onclick="handleLogout()">Logout</button>
 
-    <!-- PANEL 3: KALENDER -->
-    <div id="kalenderPanel" class="panel">
-      <div class="card" style="max-width: 980px; margin: 0 auto;">
-        <div class="cal-head">
-          <div class="cal-title">
-            <h2 style="border:none; margin-bottom:0; padding-bottom:0;">Kalender Kegiatan Akademik</h2>
-          </div>
-          <div class="cal-nav">
-            <button id="prevMonth" aria-label="Bulan sebelumnya" type="button">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 6l-6 6 6 6"/></svg>
-            </button>
-            <span class="cal-month-label" id="calMonthLabel">—</span>
-            <button id="nextMonth" aria-label="Bulan berikutnya" type="button">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 6l6 6-6 6"/></svg>
-            </button>
-          </div>
-        </div>
+      <hr>
 
-        <div class="cal-legend">
-          <span><span class="legend-dot approved"></span>Approved</span>
-          <span><span class="legend-dot pending"></span>Pending</span>
-          <span><span class="legend-dot empty"></span>Tidak ada jadwal</span>
-        </div>
+      <!-- Form Reservasi -->
+      <h3>Buat Reservasi Ruang AVR</h3>
+      <label for="tanggalResv">Tanggal Peminjaman:</label>
+      <input type="date" id="tanggalResv">
+      
+      <label for="keperluanResv">Keperluan:</label>
+      <input type="text" id="keperluanResv" placeholder="Contoh: Rapat OSIS / Presentasi Fisika">
+      
+      <button onclick="kirimReservasi()">Ajukan Peminjaman</button>
 
-        <div class="cal-weekdays">
-          <span>Min</span><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span>
-        </div>
+      <hr>
 
-        <div class="cal-grid" id="calGrid">
-          <div class="cal-loading">Memuat kalender...</div>
-        </div>
-      </div>
-    </div>
-
-  </main>
-
-  <!-- MODAL KALENDER: rundown waktu untuk tanggal yang diklik -->
-  <div class="modal-overlay" id="dayModal">
-    <div class="modal-box">
-      <button class="modal-close" id="modalClose" aria-label="Tutup" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg>
-      </button>
-      <span class="modal-eyebrow">Rundown Harian</span>
-      <h3 id="modalDate">—</h3>
-      <span class="modal-status-chip" id="modalStatusChip"><span class="dot"></span><span id="modalStatusText">—</span></span>
-
-      <div class="rundown-list" id="rundownList"></div>
-      <div class="rundown-empty" id="rundownEmpty" style="display:none;">Tidak ada jadwal untuk tanggal ini.</div>
+      <!-- Daftar Jadwal -->
+      <h3>Jadwal Mendatang Terkonfirmasi</h3>
+      <ul id="listJadwal">
+        <li>Memuat data dari database...</li>
+      </ul>
     </div>
   </div>
 
-  <!-- Firebase SDK (Modular / Compat Version) -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
   <script>
-    // Konfigurasi Firebase Project kamu
+    // ==========================================
+    // BAGIAN YANG HARUS KAMU UBAH SENDIRI
+    // ==========================================
+
+    // 1. GANTI INI DENGAN URL APPS SCRIPT KAMU
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwF9seeHdDJrAasLXP9xpq9lAYAmWMFfdAKIGaCfNlJFlN0ntP1FOPsJkE2huNgWDHL/exec";
+
+    // 2. GANTI INI DENGAN CONFIG FIREBASE KAMU
     const firebaseConfig = {
-      apiKey: "AIzaSyD-CONTOH_API_KEY_KAMU",
+      apiKey: "AIzaSyA6c6CUmLxSbvT47Uk8WO_3UJZ8jq6OCKY",
       authDomain: "pendataan-avr.firebaseapp.com",
-      projectId: "pendataan-avr",
-      storageBucket: "pendataan-avr.appspot.com",
-      messagingSenderId: "123456789",
-      appId: "1:123456789:web:abcde"
+      projectId: "pendataan-avr", // Ini sepertinya sudah benar sesuai nama projectmu
+      storageBucket: "pendataan-avr.firebasestorage.app",
+      messagingSenderId: "639304352995",
+      appId: "1:639304352995:web:8ce74327f8afe60764b1d6"
     };
 
+    // ==========================================
+    // KODE LOGIKA APLIKASI (TIDAK PERLU DIUBAH)
+    // ==========================================
+
     // Inisialisasi Firebase
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
-    }
+    firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    document.addEventListener('DOMContentLoaded', function() {
-      // 1. Inisialisasi Role & Sesi Login
-      const savedRole = localStorage.getItem('userRole');
-      if (!savedRole) {
-        alert("Kamu belum login! Mengarahkan kembali ke halaman login...");
-        window.location.href = 'login.html';
-        return; 
+    // Cek Sesi Login
+    window.onload = function() {
+      const savedUser = localStorage.getItem('userName');
+      if (savedUser) {
+        tampilkanDashboard(savedUser, localStorage.getItem('userKelas'));
       }
-      document.getElementById('displayRole').textContent = savedRole;
+    };
 
-      // 2. Navigasi Sidebar dan Panel
-      const btnDashboard = document.getElementById('btnDashboard');
-      const btnKalender = document.getElementById('btnKalender');
-      
-      const userPanel = document.getElementById('userPanel');
-      const adminPanel = document.getElementById('adminPanel');
-      const kalenderPanel = document.getElementById('kalenderPanel');
-      
-      const pageTitle = document.getElementById('pageTitle');
-      const pageSubtitle = document.getElementById('pageSubtitle');
-      const navItems = document.querySelectorAll('.nav-item');
+    // Fungsi Login (Cek NISN ke Spreadsheet)
+    async function handleLogin() {
+      const nisn = document.getElementById('inputNisn').value.trim();
+      const statusText = document.getElementById('statusLogin');
 
-      if (savedRole.toLowerCase() === 'admin') {
-        adminPanel.classList.add('active');
-        loadAdminRequests();
-      } else {
-        userPanel.classList.add('active');
-        loadApprovedSchedules();
+      if (!nisn) {
+        statusText.textContent = "NISN tidak boleh kosong!";
+        return;
       }
 
-      function hideAllPanels() {
-        userPanel.classList.remove('active');
-        adminPanel.classList.remove('active');
-        kalenderPanel.classList.remove('active');
-        navItems.forEach(item => item.classList.remove('active'));
-      }
+      statusText.style.color = "blue";
+      statusText.textContent = "Memverifikasi ke database sekolah...";
 
-      btnDashboard.addEventListener('click', function() {
-        hideAllPanels();
-        btnDashboard.classList.add('active');
-        pageTitle.textContent = "Portal Reservasi Audio Visual";
-        pageSubtitle.textContent = "Cek ketersediaan jadwal dan ajukan permohonan pemakaian ruang AVR.";
-        
-        if (savedRole.toLowerCase() === 'admin') {
-          adminPanel.classList.add('active');
-          loadAdminRequests();
-        } else {
-          userPanel.classList.add('active');
-          loadApprovedSchedules();
-        }
-      });
+      try {
+        const response = await fetch(`${APPS_SCRIPT_URL}?nisn=${nisn}`);
+        const result = await response.json();
 
-      btnKalender.addEventListener('click', function() {
-        hideAllPanels();
-        btnKalender.classList.add('active');
-        pageTitle.textContent = "Kalender Kegiatan";
-        pageSubtitle.textContent = "Lihat agenda sekolah, batas waktu tugas, dan jadwal penting lainnya.";
-        kalenderPanel.classList.add('active');
-        
-        renderCalendar(currentYear, currentMonth);
-      });
-
-      document.getElementById('logoutBtn').addEventListener('click', function() {
-        localStorage.removeItem('userRole');
-        window.location.href = 'login.html';
-      });
-
-      // 3. Fungsionalitas Form Reservasi Siswa -> Simpan ke Firestore
-      const reservationForm = document.getElementById('reservationForm');
-      if(reservationForm) {
-        reservationForm.addEventListener('submit', async function(e) {
-          e.preventDefault();
+        if (result.status === "success") {
+          localStorage.setItem('userName', result.nama);
+          localStorage.setItem('userRole', result.role);
+          localStorage.setItem('userKelas', result.kelas);
           
-          const tanggal = document.getElementById('tanggalInput').value;
-          const jamMulai = document.getElementById('jamMulaiInput').value;
-          const jamSelesai = document.getElementById('jamSelesaiInput').value;
-          const keperluan = document.getElementById('keperluanInput').value;
+          tampilkanDashboard(result.nama, result.kelas);
+        } else if (result.status === "inactive") {
+          statusText.style.color = "red";
+          statusText.textContent = "Gagal: Akun tidak aktif / sudah lulus.";
+        } else {
+          statusText.style.color = "red";
+          statusText.textContent = "NISN tidak ditemukan di database sekolah!";
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        statusText.style.color = "red";
+        statusText.textContent = "Terjadi kesalahan jaringan atau URL Apps Script salah.";
+      }
+    }
 
-          try {
-            await db.collection('reservasi').add({
-              tanggal: tanggal,
-              jamMulai: jamMulai,
-              jamSelesai: jamSelesai,
-              keperluan: keperluan,
-              peminjam: savedRole,
-              status: 'pending',
-              createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
+    // Fungsi Menampilkan Dashboard
+    function tampilkanDashboard(nama, kelas) {
+      document.getElementById('login-section').style.display = 'none';
+      document.getElementById('dashboard-section').style.display = 'block';
+      document.getElementById('welcomeText').textContent = `Selamat datang, ${nama}!`;
+      document.getElementById('infoKelas').textContent = `Kelas/Status: ${kelas}`;
+      
+      loadJadwalTerkonfirmasi();
+    }
 
-            alert("Permohonan reservasi berhasil dikirim ke database! Menunggu persetujuan admin.");
-            reservationForm.reset();
-          } catch (err) {
-            console.error("Gagal mengirim reservasi:", err);
-            alert("Terjadi kesalahan saat mengirim data. Coba lagi.");
-          }
-        });
+    // Fungsi Logout
+    function handleLogout() {
+      localStorage.clear();
+      location.reload();
+    }
+
+    // Fungsi Mengirim Reservasi ke Firebase
+    async function kirimReservasi() {
+      const tanggal = document.getElementById('tanggalResv').value;
+      const keperluan = document.getElementById('keperluanResv').value;
+      const namaUser = localStorage.getItem('userName');
+      const kelasUser = localStorage.getItem('userKelas');
+
+      if (!tanggal || !keperluan) {
+        alert("Tanggal dan keperluan harus diisi!");
+        return;
       }
 
-      // 4. Load Data Jadwal Terkonfirmasi untuk Siswa
-      async function loadApprovedSchedules() {
-        const container = document.getElementById('approvedSchedulesContainer');
-        if(!container) return;
+      try {
+        await db.collection('reservasi').add({
+          nama: namaUser,
+          kelas: kelasUser,
+          tanggal: tanggal,
+          keperluan: keperluan,
+          status: 'pending',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        alert("Reservasi berhasil dikirim! Menunggu persetujuan Admin.");
+        document.getElementById('keperluanResv').value = ''; 
+      } catch (e) {
+        console.error("Gagal mengirim:", e);
+        alert("Gagal mengirim ke database Firebase.");
+      }
+    }
 
-        try {
-          const snapshot = await db.collection('reservasi')
-            .where('status', '==', 'approved')
-            .orderBy('tanggal', 'asc')
-            .get();
-
-          if(snapshot.empty) {
-            container.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--ink-soft);">Belum ada jadwal terkonfirmasi.</td></tr>';
+    // Fungsi Memuat Jadwal dari Firebase
+    function loadJadwalTerkonfirmasi() {
+      const listJadwal = document.getElementById('listJadwal');
+      
+      db.collection('reservasi')
+        .where('status', '==', 'approved')
+        .onSnapshot((snapshot) => {
+          listJadwal.innerHTML = "";
+          if (snapshot.empty) {
+            listJadwal.innerHTML = "<li>Belum ada jadwal terkonfirmasi.</li>";
             return;
           }
 
-          let html = '';
-          snapshot.forEach(docSnap => {
-            const data = docSnap.data();
-            html += `
-              <tr>
-                <td><strong>${data.tanggal || '-'}</strong><br><small style="color:#5c675f;">${data.jamMulai || ''} - ${data.jamSelesai || ''}</small></td>
-                <td>${data.keperluan || 'Kegiatan AVR'}<br><small style="color: #666;">Peminjam: ${data.peminjam || 'Umum'}</small></td>
-                <td><span class="status approved">Disetujui</span></td>
-              </tr>
-            `;
+          snapshot.forEach((doc) => {
+            let data = doc.data();
+            let li = document.createElement('li');
+            li.innerHTML = `<strong>${data.tanggal}</strong>: ${data.keperluan} <br><small>Oleh: ${data.nama} (${data.kelas})</small>`;
+            li.style.marginBottom = "10px";
+            listJadwal.appendChild(li);
           });
-          container.innerHTML = html;
-        } catch (err) {
-          console.error("Gagal memuat jadwal terkonfirmasi:", err);
-          container.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--danger);">Gagal memuat data dari database.</td></tr>';
-        }
-      }
-
-      // 5. Load Data Permohonan Pending untuk Admin
-      async function loadAdminRequests() {
-        const container = document.getElementById('adminRequestsContainer');
-        if(!container) return;
-
-        try {
-          const snapshot = await db.collection('reservasi')
-            .where('status', '==', 'pending')
-            .get();
-
-          if(snapshot.empty) {
-            container.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--ink-soft);">Tidak ada permohonan menunggu persetujuan.</td></tr>';
-            return;
-          }
-
-          let html = '';
-          snapshot.forEach(docSnap => {
-            const data = docSnap.data();
-            const docId = docSnap.id;
-            html += `
-              <tr>
-                <td><strong>${data.peminjam || 'Siswa'}</strong></td>
-                <td><strong>${data.tanggal || '-'}</strong><br><span style="color:#5c675f; font-size:12px;">${data.jamMulai || ''} - ${data.jamSelesai || ''}</span></td>
-                <td>${data.keperluan || '-'}</td>
-                <td>
-                  <div class="action-btns">
-                    <button class="btn-sm btn-approve" onclick="updateStatus('${docId}', 'approved')">Setujui</button>
-                    <button class="btn-sm btn-reject" onclick="updateStatus('${docId}', 'rejected')">Tolak</button>
-                  </div>
-                </td>
-              </tr>
-            `;
-          });
-          container.innerHTML = html;
-        } catch (err) {
-          console.error("Gagal memuat permohonan admin:", err);
-          container.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--danger);">Gagal memuat data admin.</td></tr>';
-        }
-      }
-
-      // Fungsi Global Aksi Admin (Setujui / Tolak)
-      window.updateStatus = async function(docId, newStatus) {
-        try {
-          await db.collection('reservasi').doc(docId).update({ status: newStatus });
-          alert(`Reservasi berhasil ${newStatus === 'approved' ? 'disetujui' : 'ditolak'}!`);
-          loadAdminRequests(); // Refresh tabel admin
-        } catch (err) {
-          console.error("Gagal mengubah status:", err);
-          alert("Gagal memproses aksi.");
-        }
-      };
-
-      // ================== LOGIKA KALENDER DARI FIRESTORE ==================
-      const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-      const dayNamesFull = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
-
-      let currentYear = new Date().getFullYear();
-      let currentMonth = new Date().getMonth();
-      let currentMonthData = {};
-
-      function formatDateKey(year, month, day){
-        const mm = String(month + 1).padStart(2, '0');
-        const dd = String(day).padStart(2, '0');
-        return `${year}-${mm}-${dd}`;
-      }
-
-      function formatReadableDate(dateStr){
-        const [y, m, d] = dateStr.split('-').map(Number);
-        const dateObj = new Date(y, m - 1, d);
-        return `${dayNamesFull[dateObj.getDay()]}, ${d} ${monthNames[m - 1]} ${y}`;
-      }
-
-      async function fetchCalendarDataFromFirestore(year, month){
-        const data = {};
-        const startDate = formatDateKey(year, month, 1);
-        const endDate = formatDateKey(year, month, new Date(year, month + 1, 0).getDate());
-
-        try {
-          const snapshot = await db.collection('reservasi')
-            .where('tanggal', '>=', startDate)
-            .where('tanggal', '<=', endDate)
-            .get();
-
-          snapshot.forEach(docSnap => {
-            const item = docSnap.data();
-            const dateStr = item.tanggal;
-
-            if (!data[dateStr]) {
-              data[dateStr] = { status: 'empty', items: [] };
-            }
-
-            // Masukkan rundown/kegiatan
-            data[dateStr].items.push({
-              time: `${item.jamMulai || ''} - ${item.jamSelesai || ''}`,
-              title: item.keperluan || 'Kegiatan AVR',
-              note: `Peminjam: ${item.peminjam || 'Umum'} (${item.status})`
-            });
-
-            // Tentukan prioritas status hari (jika ada approved, prioritaskan approved)
-            if (item.status === 'approved') {
-              data[dateStr].status = 'approved';
-            } else if (item.status === 'pending' && data[dateStr].status !== 'approved') {
-              data[dateStr].status = 'pending';
-            }
-          });
-        } catch (err) {
-          console.error("Gagal mengambil data kalender dari Firestore:", err);
-        }
-        return data;
-      }
-
-      async function renderCalendar(year, month){
-        const grid = document.getElementById('calGrid');
-        document.getElementById('calMonthLabel').textContent = `${monthNames[month]} ${year}`;
-        grid.innerHTML = '<div class="cal-loading">Memuat kalender dari database...</div>';
-
-        const monthData = await fetchCalendarDataFromFirestore(year, month);
-        currentMonthData = monthData;
-
-        const firstDay = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const todayStr = formatDateKey(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
-
-        let html = '';
-        for(let i = 0; i < firstDay; i++){ html += '<div class="cal-day empty-cell"></div>'; }
-        for(let d = 1; d <= daysInMonth; d++){
-          const dateStr = formatDateKey(year, month, d);
-          const info = monthData[dateStr] || { status: 'empty', items: [] };
-          const isToday = dateStr === todayStr;
-          html += `
-            <div class="cal-day status-${info.status}${isToday ? ' today' : ''}" data-date="${dateStr}">
-              <span class="day-num">${d}</span>
-              <span class="day-status-dot"></span>
-            </div>`;
-        }
-        grid.innerHTML = html;
-
-        grid.querySelectorAll('.cal-day:not(.empty-cell)').forEach(cell => {
-          cell.addEventListener('click', () => openDayModal(cell.dataset.date));
+        }, (error) => {
+          console.error("Gagal memuat data Firestore:", error);
+          listJadwal.innerHTML = "<li style='color:red;'>Gagal memuat data kalender. Cek Rules Firestore!</li>";
         });
-      }
-
-      function setStatusChip(status){
-        const chip = document.getElementById('modalStatusChip');
-        const text = document.getElementById('modalStatusText');
-        chip.className = 'modal-status-chip ' + status;
-        text.textContent = status === 'approved' ? 'Approved' : status === 'pending' ? 'Pending' : 'Belum ada jadwal';
-      }
-
-      function renderRundown(items){
-        const list = document.getElementById('rundownList');
-        const empty = document.getElementById('rundownEmpty');
-        if(!items || items.length === 0){
-          list.innerHTML = '';
-          empty.style.display = 'block';
-          return;
-        }
-        empty.style.display = 'none';
-        list.innerHTML = items.map(item => `
-          <div class="rundown-item">
-            <div class="rundown-time">${item.time}</div>
-            <div class="rundown-info">
-              <h4>${item.title}</h4>
-              <p>${item.note || ''}</p>
-            </div>
-          </div>
-        `).join('');
-      }
-
-      function openDayModal(dateStr){
-        const overlay = document.getElementById('dayModal');
-        const info = currentMonthData[dateStr] || { status: 'empty', items: [] };
-
-        document.getElementById('modalDate').textContent = formatReadableDate(dateStr);
-        setStatusChip(info.status);
-        renderRundown(info.items);
-        overlay.classList.add('show');
-      }
-
-      function closeDayModal(){ document.getElementById('dayModal').classList.remove('show'); }
-
-      document.getElementById('modalClose').addEventListener('click', closeDayModal);
-      document.getElementById('dayModal').addEventListener('click', (e) => {
-        if(e.target.id === 'dayModal') closeDayModal();
-      });
-
-      document.getElementById('prevMonth').addEventListener('click', () => {
-        currentMonth--;
-        if(currentMonth < 0){ currentMonth = 11; currentYear--; }
-        renderCalendar(currentYear, currentMonth);
-      });
-      document.getElementById('nextMonth').addEventListener('click', () => {
-        currentMonth++;
-        if(currentMonth > 11){ currentMonth = 0; currentYear++; }
-        renderCalendar(currentYear, currentMonth);
-      });
-    });
+    }
   </script>
 </body>
 </html>

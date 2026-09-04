@@ -589,11 +589,9 @@
         showInfo('Berhasil masuk. Mengarahkan ke dashboard...');
         window.location.href = 'index.html';
       } else if(result.status === 'inactive'){
-        showError('Akun ini sudah tidak aktif / sudah lulus.');
+        showError('SISWA TELAH KABUR!!.');
       } else {
         showError('NISN/NIP/ID tidak terdaftar di database sekolah.');
-      } else {
-        showError('SISWA TELAH KABUR!!.');
       }
     }catch(err){
       console.error('Gagal terhubung ke Apps Script:', err);

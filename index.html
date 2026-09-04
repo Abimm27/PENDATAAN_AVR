@@ -402,7 +402,7 @@
       </div>
     </div>
 
-    <!-- PANEL 2: ADMIN (DASHBOARD LENGKAP FITUR BARU) -->
+    <!-- PANEL 2: ADMIN (DASHBOARD LENGKAP) -->
     <div id="adminPanel" class="panel">
       <div class="grid-layout">
         
@@ -551,12 +551,11 @@
     </div>
   </div>
 
-  <!-- Firebase SDK (Modular / Compat Version) -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
   <script>
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz5Qd9asciIBDWFwz-mgN25PvcN9IV64T7XPLbyGKOAjq81njRYdd2bq5rhu_ZltOyX/exec";
     const firebaseConfig = {
       apiKey: "AIzaSyA6c6CUmLxSbvT47Uk8WO_3UJZ8jq6OCKY",
       authDomain: "pendataan-avr.firebaseapp.com",
@@ -641,6 +640,7 @@
 
       document.getElementById('logoutBtn').addEventListener('click', function() {
         localStorage.removeItem('userRole');
+        localStorage.removeItem('userName');
         window.location.href = 'login.html';
       });
 
@@ -675,7 +675,7 @@
         });
       }
 
-      // 4. Load Data Jadwal Terkonfirmasi untuk Siswa
+      // 4. Load Data Jadwal Terkonfirmasi untuk Siswa (Tanpa Index error)
       async function loadApprovedSchedules() {
         const container = document.getElementById('approvedSchedulesContainer');
         if(!container) return;
@@ -683,7 +683,6 @@
         try {
           const snapshot = await db.collection('reservasi')
             .where('status', '==', 'approved')
-            .orderBy('tanggal', 'asc')
             .get();
 
           if(snapshot.empty) {
@@ -691,9 +690,14 @@
             return;
           }
 
-          let html = '';
+          let docs = [];
           snapshot.forEach(docSnap => {
-            const data = docSnap.data();
+            docs.push({ id: docSnap.id, ...docSnap.data() });
+          });
+          docs.sort((a, b) => (a.tanggal || '').localeCompare(b.tanggal || ''));
+
+          let html = '';
+          docs.forEach(data => {
             html += `
               <tr>
                 <td><strong>${data.tanggal || '-'}</strong><br><small style="color:#5c675f;">${data.jamMulai || ''} - ${data.jamSelesai || ''}</small></td>
@@ -762,10 +766,10 @@
       };
 
       // ========================================================
-      // FITUR BARU ADMIN: KELOLA JADWAL & TAMBAH EVENT LANGSUNG
+      // FITUR ADMIN: KELOLA JADWAL & TAMBAH EVENT LANGSUNG
       // ========================================================
 
-      // A. Load Daftar Jadwal Approved di Admin (Untuk Batal/Reschedule)
+      // A. Load Daftar Jadwal Approved di Admin (Tanpa Index error)
       window.loadAdminApprovedSchedules = async function() {
         const container = document.getElementById('adminApprovedContainer');
         if(!container) return;
@@ -773,7 +777,6 @@
         try {
           const snapshot = await db.collection('reservasi')
             .where('status', '==', 'approved')
-            .orderBy('tanggal', 'asc')
             .get();
 
           if(snapshot.empty) {
@@ -781,10 +784,15 @@
             return;
           }
 
-          let html = '';
+          let docs = [];
           snapshot.forEach(docSnap => {
-            const data = docSnap.data();
-            const docId = docSnap.id;
+            docs.push({ id: docSnap.id, ...docSnap.data() });
+          });
+          docs.sort((a, b) => (a.tanggal || '').localeCompare(b.tanggal || ''));
+
+          let html = '';
+          docs.forEach(data => {
+            const docId = data.id;
             html += `
               <tr>
                 <td><strong>${data.tanggal}</strong><br><small style="color:#5c675f;">${data.jamMulai} - ${data.jamSelesai}</small></td>
@@ -804,7 +812,7 @@
         }
       };
 
-      // B. Fitur Batal Jadwal (Set status to 'cancelled')
+      // B. Fitur Batal Jadwal
       window.cancelSchedule = async function(docId) {
         if(confirm("Yakin ingin membatalkan jadwal ini? Jadwal akan dihapus dari kalender.")) {
           try {
@@ -854,7 +862,7 @@
         });
       }
 
-      // D. Fitur Tambah Event Langsung oleh Admin (Auto Status Approved)
+      // D. Fitur Tambah Event Langsung oleh Admin
       const adminEventForm = document.getElementById('adminEventForm');
       if(adminEventForm) {
         adminEventForm.addEventListener('submit', async function(e) {

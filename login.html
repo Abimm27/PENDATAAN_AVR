@@ -589,7 +589,7 @@
         showInfo('Berhasil masuk. Mengarahkan ke dashboard...');
         window.location.href = 'index.html';
       } else if(result.status === 'inactive'){
-        showError('SISWA TELAH KABUR!!.');
+        showError('Akun ini sudah tidak aktif / sudah lulus.');
       } else {
         showError('NISN/NIP/ID tidak terdaftar di database sekolah.');
       }

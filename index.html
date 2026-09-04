@@ -404,23 +404,71 @@
 
     <!-- PANEL 2: ADMIN (DASHBOARD) -->
     <div id="adminPanel" class="panel">
-      <div class="card">
-        <h2>Daftar Permohonan Menunggu Persetujuan</h2>
-        <table class="data-table" style="margin-top: 16px;">
-          <thead>
-            <tr>
-              <th>Peminjam</th>
-              <th>Waktu Penggunaan</th>
-              <th>Keperluan Acara</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="adminRequestsContainer">
-            <tr>
-              <td colspan="4" style="text-align: center; color: var(--ink-soft);">Memuat permohonan masuk...</td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="grid-layout">
+        
+        <!-- Kolom Kiri: Form Tambah Event Admin -->
+        <div class="card">
+          <h2>Tambah Event Kalender (Admin)</h2>
+          <form id="adminEventForm">
+            <div class="form-group">
+              <label>Tanggal Pelaksanaan</label>
+              <input type="date" id="adminTanggal" required>
+            </div>
+            <div style="display:flex; gap:16px;">
+              <div class="form-group" style="flex:1;">
+                <label>Jam Mulai</label>
+                <input type="time" id="adminJamMulai" required>
+              </div>
+              <div class="form-group" style="flex:1;">
+                <label>Jam Selesai</label>
+                <input type="time" id="adminJamSelesai" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Nama Acara / Kegiatan</label>
+              <textarea id="adminKeperluan" rows="3" placeholder="Contoh: Rapat Guru, Perbaikan Alat..." required></textarea>
+            </div>
+            <button type="submit" class="btn-submit">Tambahkan ke Kalender</button>
+          </form>
+        </div>
+
+        <!-- Kolom Kanan: Tabel Permohonan & Jadwal Terkonfirmasi -->
+        <div style="display: flex; flex-direction: column; gap: 32px;">
+          <!-- Tabel Pending -->
+          <div class="card">
+            <h2>Permohonan Menunggu Persetujuan</h2>
+            <table class="data-table" style="margin-top: 16px;">
+              <thead>
+                <tr>
+                  <th>Peminjam & Waktu</th>
+                  <th>Keperluan Acara</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="adminRequestsContainer">
+                <tr><td colspan="3" style="text-align: center; color: var(--ink-soft);">Memuat permohonan...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Tabel Approved (Untuk Reschedule/Batal) -->
+          <div class="card">
+            <h2>Kelola Jadwal Terkonfirmasi</h2>
+            <table class="data-table" style="margin-top: 16px;">
+              <thead>
+                <tr>
+                  <th>Waktu</th>
+                  <th>Acara</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="adminApprovedContainer">
+                <tr><td colspan="3" style="text-align: center; color: var(--ink-soft);">Memuat jadwal...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -474,7 +522,33 @@
       <div class="rundown-empty" id="rundownEmpty" style="display:none;">Tidak ada jadwal untuk tanggal ini.</div>
     </div>
   </div>
-
+<!-- MODAL RESCHEDULE ADMIN -->
+  <div class="modal-overlay" id="rescheduleModal">
+    <div class="modal-box">
+      <button class="modal-close" id="closeReschedule" aria-label="Tutup" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+      <h3>Pindahkan Jadwal</h3>
+      <form id="rescheduleForm" style="margin-top: 16px;">
+        <input type="hidden" id="rescheduleDocId">
+        <div class="form-group">
+          <label>Tanggal Baru</label>
+          <input type="date" id="rescheduleTanggal" required>
+        </div>
+        <div style="display:flex; gap:16px;">
+          <div class="form-group" style="flex:1;">
+            <label>Jam Mulai Baru</label>
+            <input type="time" id="rescheduleJamMulai" required>
+          </div>
+          <div class="form-group" style="flex:1;">
+            <label>Jam Selesai Baru</label>
+            <input type="time" id="rescheduleJamSelesai" required>
+          </div>
+        </div>
+        <button type="submit" class="btn-submit">Simpan Perubahan</button>
+      </form>
+    </div>
+  </div>
   <!-- Firebase SDK (Modular / Compat Version) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -526,6 +600,7 @@
       if (savedRole.toLowerCase() === 'admin') {
         adminPanel.classList.add('active');
         loadAdminRequests();
+        loadAdminApprovedSchedules();
       } else {
         userPanel.classList.add('active');
         loadApprovedSchedules();
@@ -547,6 +622,7 @@
         if (savedRole.toLowerCase() === 'admin') {
           adminPanel.classList.add('active');
           loadAdminRequests();
+          loadAdminApprovedSchedules();
         } else {
           userPanel.classList.add('active');
           loadApprovedSchedules();
@@ -684,7 +760,124 @@
           alert("Gagal memproses aksi.");
         }
       };
+// ========================================================
+      // FITUR BARU ADMIN: KELOLA JADWAL & TAMBAH EVENT LANGSUNG
+      // ========================================================
 
+      // A. Memuat Daftar Jadwal yang Sudah Disetujui (Bisa dibatalkan/dipindah)
+      window.loadAdminApprovedSchedules = async function() {
+        const container = document.getElementById('adminApprovedContainer');
+        if(!container) return;
+
+        try {
+          const snapshot = await db.collection('reservasi')
+            .where('status', '==', 'approved')
+            .orderBy('tanggal', 'asc')
+            .get();
+
+          if(snapshot.empty) {
+            container.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--ink-soft);">Tidak ada jadwal terkonfirmasi.</td></tr>';
+            return;
+          }
+
+          let html = '';
+          snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            const docId = docSnap.id;
+            html += `
+              <tr>
+                <td><strong>${data.tanggal}</strong><br><small style="color:#5c675f;">${data.jamMulai} - ${data.jamSelesai}</small></td>
+                <td>${data.keperluan}<br><small style="color: #666;">Peminjam: ${data.peminjam}</small></td>
+                <td>
+                  <div class="action-btns">
+                    <button class="btn-sm btn-approve" style="background:var(--chalk-gold-dim);" onclick="openReschedule('${docId}', '${data.tanggal}', '${data.jamMulai}', '${data.jamSelesai}')">Ubah</button>
+                    <button class="btn-sm btn-reject" onclick="cancelSchedule('${docId}')">Batal</button>
+                  </div>
+                </td>
+              </tr>
+            `;
+          });
+          container.innerHTML = html;
+        } catch (err) {
+          console.error("Gagal memuat jadwal:", err);
+        }
+      };
+
+      // B. Fitur Batal Jadwal
+      window.cancelSchedule = async function(docId) {
+        if(confirm("Yakin ingin membatalkan jadwal ini? Jadwal akan dihapus dari kalender.")) {
+          try {
+            await db.collection('reservasi').doc(docId).update({ status: 'cancelled' }); 
+            alert("Jadwal berhasil dibatalkan.");
+            loadAdminApprovedSchedules();
+          } catch (err) {
+            console.error("Gagal batal:", err);
+            alert("Terjadi kesalahan sistem.");
+          }
+        }
+      };
+
+      // C. Fitur Reschedule (Pindah Jadwal)
+      const rescheduleModal = document.getElementById('rescheduleModal');
+      const rescheduleForm = document.getElementById('rescheduleForm');
+      
+      window.openReschedule = function(docId, tgl, mulai, selesai) {
+        document.getElementById('rescheduleDocId').value = docId;
+        document.getElementById('rescheduleTanggal').value = tgl;
+        document.getElementById('rescheduleJamMulai').value = mulai;
+        document.getElementById('rescheduleJamSelesai').value = selesai;
+        rescheduleModal.classList.add('show');
+      };
+
+      document.getElementById('closeReschedule').addEventListener('click', () => {
+        rescheduleModal.classList.remove('show');
+      });
+
+      if(rescheduleForm) {
+        rescheduleForm.addEventListener('submit', async function(e) {
+          e.preventDefault();
+          const docId = document.getElementById('rescheduleDocId').value;
+          try {
+            await db.collection('reservasi').doc(docId).update({
+              tanggal: document.getElementById('rescheduleTanggal').value,
+              jamMulai: document.getElementById('rescheduleJamMulai').value,
+              jamSelesai: document.getElementById('rescheduleJamSelesai').value
+            });
+            alert("Jadwal berhasil dipindahkan!");
+            rescheduleModal.classList.remove('show');
+            loadAdminApprovedSchedules();
+          } catch (err) {
+            console.error("Gagal memindah jadwal:", err);
+            alert("Gagal menyimpan jadwal baru.");
+          }
+        });
+      }
+
+      // D. Fitur Tambah Event Langsung (Tanpa Persetujuan)
+      const adminEventForm = document.getElementById('adminEventForm');
+      if(adminEventForm) {
+        adminEventForm.addEventListener('submit', async function(e) {
+          e.preventDefault();
+          const namaAdmin = localStorage.getItem('userName') || 'Admin';
+          try {
+            await db.collection('reservasi').add({
+              tanggal: document.getElementById('adminTanggal').value,
+              jamMulai: document.getElementById('adminJamMulai').value,
+              jamSelesai: document.getElementById('adminJamSelesai').value,
+              keperluan: document.getElementById('adminKeperluan').value,
+              peminjam: `Panitia / ${namaAdmin}`,
+              status: 'approved', // Langsung masuk kalender
+              createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            alert("Event berhasil ditambahkan ke kalender!");
+            adminEventForm.reset();
+            loadAdminApprovedSchedules();
+          } catch (err) {
+            console.error("Gagal tambah event:", err);
+            alert("Gagal menambahkan event.");
+          }
+        });
+      }
       // ================== LOGIKA KALENDER DARI FIRESTORE ==================
       const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
       const dayNamesFull = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];

@@ -3,90 +3,458 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portal SIM AVR</title>
+  <title>Portal SIM AVR — Ruang Kelas Digital</title>
+  
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;1,400&display=swap" rel="stylesheet">
   
   <!-- SDK Firebase -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f7f6; }
-    .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-    input, button { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; }
-    button { background-color: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; }
-    button:hover { background-color: #0056b3; }
-    .logout-btn { background-color: #dc3545; }
-    .logout-btn:hover { background-color: #c82333; }
-    hr { margin: 20px 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #0c1c17;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: #1e293b;
+    }
+
+    /* CONTAINER UTAMA SPLIT SCREEN */
+    .portal-card {
+      width: 100%;
+      max-width: 980px;
+      background: #faf8f3;
+      border-radius: 20px;
+      overflow: hidden;
+      display: flex;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+      min-height: 580px;
+    }
+
+    /* SISIKIRI: DARK HERO SECTION */
+    .hero-section {
+      flex: 1.1;
+      background-color: #132b23;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(212, 175, 55, 0.08) 0%, transparent 40%),
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 100% 100%, 24px 24px, 24px 24px;
+      padding: 48px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      color: #ffffff;
+      position: relative;
+    }
+
+    .brand-header {
+      font-size: 0.75rem;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #d4af37;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand-header::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background-color: #d4af37;
+      border-radius: 50%;
+    }
+
+    .hero-graphics {
+      margin: 30px 0;
+      display: flex;
+      justify-content: center;
+    }
+    .hero-graphics svg {
+      width: 140px;
+      height: 140px;
+      stroke: #d4af37;
+      opacity: 0.9;
+    }
+
+    .hero-content h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.1rem;
+      line-height: 1.25;
+      font-weight: 600;
+      margin-bottom: 14px;
+      color: #f8fafc;
+    }
+    .hero-content p {
+      font-size: 0.88rem;
+      color: #9eb1a6;
+      line-height: 1.6;
+      max-width: 360px;
+    }
+
+    .hero-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: #617a6f;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 16px;
+      margin-top: 20px;
+    }
+
+    /* SISI KANAN: FORM SECTION */
+    .form-section {
+      flex: 1;
+      padding: 44px 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background: #faf8f3;
+    }
+
+    /* TABS ROLE SWITCHER */
+    .role-tabs {
+      display: flex;
+      background: #eee8de;
+      padding: 4px;
+      border-radius: 10px;
+      margin-bottom: 28px;
+      gap: 2px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 8px 12px;
+      border: none;
+      background: transparent;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #64748b;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .tab-btn.active {
+      background: #ffffff;
+      color: #132b23;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    .form-header {
+      margin-bottom: 24px;
+    }
+    .portal-tag {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #c5a059;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      display: block;
+    }
+    .form-header h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.75rem;
+      color: #132b23;
+      margin-bottom: 6px;
+    }
+    .form-header p {
+      font-size: 0.83rem;
+      color: #64748b;
+    }
+
+    /* INPUT STYLES */
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 6px;
+    }
+    .form-control {
+      width: 100%;
+      padding: 12px 14px;
+      font-size: 0.9rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #1e293b;
+      transition: border-color 0.2s;
+    }
+    .form-control:focus {
+      outline: none;
+      border-color: #132b23;
+      box-shadow: 0 0 0 3px rgba(19, 43, 35, 0.08);
+    }
+
+    .btn-submit {
+      width: 100%;
+      padding: 13px;
+      background: #1f382f;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-submit:hover {
+      background: #132b23;
+    }
+
+    .alert-box {
+      margin-top: 14px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      display: none;
+      text-align: center;
+    }
+    .alert-error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+    .alert-info { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+
+    /* DASHBOARD MODERN STYLE */
+    .dashboard-container {
+      width: 100%;
+      max-width: 800px;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+      display: none;
+    }
+    .user-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #f1f5f9;
+      margin-bottom: 24px;
+    }
+    .user-profile h3 {
+      font-size: 1.4rem;
+      color: #132b23;
+      font-family: 'Playfair Display', serif;
+    }
+    .badge-status {
+      display: inline-block;
+      padding: 4px 10px;
+      background: #dcfce7;
+      color: #166534;
+      font-size: 0.75rem;
+      font-weight: 700;
+      border-radius: 20px;
+      margin-top: 4px;
+    }
+    .btn-logout {
+      padding: 8px 16px;
+      background: #fee2e2;
+      color: #991b1b;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+    .card-box {
+      background: #faf8f3;
+      border: 1px solid #eae6df;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    .card-box h4 {
+      font-size: 1rem;
+      color: #132b23;
+      margin-bottom: 14px;
+    }
+    .schedule-item {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-left: 4px solid #132b23;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    @media (max-width: 768px) {
+      .portal-card { flex-direction: column; }
+      .hero-section { padding: 32px 24px; }
+      .form-section { padding: 32px 24px; }
+    }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <!-- HALAMAN LOGIN -->
-    <div id="login-section">
-      <h2>Login Portal AVR</h2>
-      <p>Masukkan NISN / ID Anda untuk masuk ke sistem.</p>
-      <input type="text" id="inputNisn" placeholder="Ketik NISN / ID di sini...">
-      <button onclick="handleLogin()">Masuk</button>
-      <p id="statusLogin" style="color: red; font-weight: bold; text-align: center;"></p>
+  <!-- ==================== PORTAL LOGIN SCREEN ==================== -->
+  <div class="portal-card" id="loginCard">
+    <!-- Sisi Kiri: Hero Banner -->
+    <div class="hero-section">
+      <div class="brand-header">SIM SEKOLAH NUSANTARA</div>
+
+      <div class="hero-graphics">
+        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 40 L50 25 L80 40 L50 55 Z" stroke="#d4af37" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M30 46 V65 C30 72, 70 72, 70 65 V46" stroke="#d4af37" stroke-width="2" stroke-linecap="round"/>
+          <path d="M80 40 V65" stroke="#d4af37" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="80" cy="67" r="2" fill="#d4af37"/>
+        </svg>
+      </div>
+
+      <div class="hero-content">
+        <h1>Selamat datang kembali di ruang kelas digital.</h1>
+        <p>Satu portal untuk siswa, guru, dan admin — catatan, nilai, dan jadwal dalam satu tempat.</p>
+      </div>
+
+      <div class="hero-footer">
+        <span>Tahun Ajaran 2026/2027</span>
+        <span>v2.4</span>
+      </div>
     </div>
 
-    <!-- HALAMAN DASHBOARD -->
-    <div id="dashboard-section" style="display: none;">
-      <h2 id="welcomeText"></h2>
-      <p id="infoKelas"></p>
-      <button class="logout-btn" onclick="handleLogout()">Logout</button>
+    <!-- Sisi Kanan: Form Login -->
+    <div class="form-section">
+      <!-- Role Switcher -->
+      <div class="role-tabs">
+        <button class="tab-btn active" onclick="switchRole('siswa')">🎓 Siswa</button>
+        <button class="tab-btn" onclick="switchRole('guru')">💻 Guru</button>
+        <button class="tab-btn" onclick="switchRole('admin')">🛡️ Admin</button>
+      </div>
 
-      <hr>
+      <div class="form-header">
+        <span class="portal-tag" id="portalTag">• PORTAL SISWA</span>
+        <h2>Masuk ke akun kamu</h2>
+        <p id="portalDesc">Gunakan NISN yang terdaftar di sekolah.</p>
+      </div>
 
-      <!-- Form Reservasi -->
-      <h3>Buat Reservasi Ruang AVR</h3>
-      <label for="tanggalResv">Tanggal Peminjaman:</label>
-      <input type="date" id="tanggalResv">
-      
-      <label for="keperluanResv">Keperluan:</label>
-      <input type="text" id="keperluanResv" placeholder="Contoh: Rapat OSIS / Presentasi Fisika">
-      
-      <button onclick="kirimReservasi()">Ajukan Peminjaman</button>
+      <form onsubmit="event.preventDefault(); handleLogin();">
+        <div class="form-group">
+          <label id="labelNisn">NISN / Nomor Induk Siswa</label>
+          <input type="text" id="inputNisn" class="form-control" placeholder="Contoh: 0091234567" required>
+        </div>
 
-      <hr>
+        <button type="submit" class="btn-submit" id="btnSubmit">
+          <span>Masuk sebagai Siswa</span> &rarr;
+        </button>
 
-      <!-- Daftar Jadwal -->
-      <h3>Jadwal Mendatang Terkonfirmasi</h3>
-      <ul id="listJadwal">
-        <li>Memuat data dari database...</li>
-      </ul>
+        <div id="alertBox" class="alert-box"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== DASHBOARD SCREEN ==================== -->
+  <div class="dashboard-container" id="dashboardCard">
+    <div class="user-header">
+      <div class="user-profile">
+        <h3 id="welcomeText">Selamat datang!</h3>
+        <span class="badge-status" id="badgeKelas">Kelas: -</span>
+      </div>
+      <button class="btn-logout" onclick="handleLogout()">Keluar</button>
+    </div>
+
+    <!-- Form Peminjaman AVR -->
+    <div class="card-box">
+      <h4>📌 Ajukan Peminjaman Ruang AVR</h4>
+      <div class="form-group">
+        <label>Tanggal Peminjaman</label>
+        <input type="date" id="tanggalResv" class="form-control">
+      </div>
+      <div class="form-group">
+        <label>Keperluan / Kegiatan</label>
+        <input type="text" id="keperluanResv" class="form-control" placeholder="Contoh: Presentasi Fisika / Rapat OSIS">
+      </div>
+      <button class="btn-submit" onclick="kirimReservasi()">Kirim Pengajuan</button>
+    </div>
+
+    <!-- Jadwal Terkonfirmasi -->
+    <div class="card-box" style="margin-bottom:0;">
+      <h4> Jadwal AVR Terkonfirmasi</h4>
+      <div id="listJadwal">
+        <p style="font-size:0.85rem; color:#64748b;">Memuat data jadwal...</p>
+      </div>
     </div>
   </div>
 
   <script>
     // ==========================================
-    // BAGIAN YANG HARUS KAMU UBAH SENDIRI
+    // CONFIGURASI DATABASE & KUNCI
     // ==========================================
 
-    // 1. GANTI INI DENGAN URL APPS SCRIPT KAMU
+    // 1. URL Apps Script
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz5Qd9asciIBDWFwz-mgN25PvcN9IV64T7XPLbyGKOAjq81njRYdd2bq5rhu_ZltOyX/exec";
 
-    // 2. GANTI INI DENGAN CONFIG FIREBASE KAMU
+    // 2. Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyA6c6CUmLxSbvT47Uk8WO_3UJZ8jq6OCKY",
       authDomain: "pendataan-avr.firebaseapp.com",
-      projectId: "pendataan-avr", // Ini sepertinya sudah benar sesuai nama projectmu
+      projectId: "pendataan-avr",
       storageBucket: "pendataan-avr.firebasestorage.app",
       messagingSenderId: "639304352995",
-      appId: "1:639304352995:web:8ce74327f8afe60764b1d6"
+      appId: "1:639304352995:web:8ce74327f8afe60764b1d6",
     };
-
-    // ==========================================
-    // KODE LOGIKA APLIKASI (TIDAK PERLU DIUBAH)
-    // ==========================================
 
     // Inisialisasi Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // Cek Sesi Login
+    let currentRole = 'siswa';
+
+    // Tab Switching Role Logic
+    function switchRole(role) {
+      currentRole = role;
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      
+      const tag = document.getElementById('portalTag');
+      const desc = document.getElementById('portalDesc');
+      const label = document.getElementById('labelNisn');
+      const btn = document.getElementById('btnSubmit');
+
+      if (role === 'siswa') {
+        event.target.classList.add('active');
+        tag.textContent = '• PORTAL SISWA';
+        desc.textContent = 'Gunakan NISN yang terdaftar di sekolah.';
+        label.textContent = 'NISN / Nomor Induk Siswa';
+        btn.innerHTML = '<span>Masuk sebagai Siswa</span> &rarr;';
+      } else if (role === 'guru') {
+        event.target.classList.add('active');
+        tag.textContent = '• PORTAL GURU';
+        desc.textContent = 'Masukkan NIP atau ID Guru kamu.';
+        label.textContent = 'NIP / ID Guru';
+        btn.innerHTML = '<span>Masuk sebagai Guru</span> &rarr;';
+      } else {
+        event.target.classList.add('active');
+        tag.textContent = '• PORTAL ADMIN';
+        desc.textContent = 'Akses terbatas untuk pengelola AVR.';
+        label.textContent = 'ID Admin';
+        btn.innerHTML = '<span>Masuk sebagai Admin</span> &rarr;';
+      }
+    }
+
+    // Auto-login jika ada session
     window.onload = function() {
       const savedUser = localStorage.getItem('userName');
       if (savedUser) {
@@ -94,18 +462,14 @@
       }
     };
 
-    // Fungsi Login (Cek NISN ke Spreadsheet)
+    // LOGIN VIA APPS SCRIPT
     async function handleLogin() {
       const nisn = document.getElementById('inputNisn').value.trim();
-      const statusText = document.getElementById('statusLogin');
+      const alertBox = document.getElementById('alertBox');
 
-      if (!nisn) {
-        statusText.textContent = "NISN tidak boleh kosong!";
-        return;
-      }
+      if (!nisn) return;
 
-      statusText.style.color = "blue";
-      statusText.textContent = "Memverifikasi ke database sekolah...";
+      showAlert("Memverifikasi data ke database sekolah...", "info");
 
       try {
         const response = await fetch(`${APPS_SCRIPT_URL}?nisn=${nisn}`);
@@ -118,36 +482,39 @@
           
           tampilkanDashboard(result.nama, result.kelas);
         } else if (result.status === "inactive") {
-          statusText.style.color = "red";
-          statusText.textContent = "Gagal: Akun tidak aktif / sudah lulus.";
+          showAlert("Akun ini sudah tidak aktif / sudah lulus.", "error");
         } else {
-          statusText.style.color = "red";
-          statusText.textContent = "NISN tidak ditemukan di database sekolah!";
+          showAlert("ID / NISN tidak terdaftar di database!", "error");
         }
       } catch (error) {
         console.error("Error:", error);
-        statusText.style.color = "red";
-        statusText.textContent = "Terjadi kesalahan jaringan atau URL Apps Script salah.";
+        showAlert("Gagal terhubung ke database. Periksa koneksi / URL Apps Script.", "error");
       }
     }
 
-    // Fungsi Menampilkan Dashboard
-    function tampilkanDashboard(nama, kelas) {
-      document.getElementById('login-section').style.display = 'none';
-      document.getElementById('dashboard-section').style.display = 'block';
-      document.getElementById('welcomeText').textContent = `Selamat datang, ${nama}!`;
-      document.getElementById('infoKelas').textContent = `Kelas/Status: ${kelas}`;
-      
-      loadJadwalTerkonfirmasi();
+    function showAlert(msg, type) {
+      const alertBox = document.getElementById('alertBox');
+      alertBox.style.display = 'block';
+      alertBox.className = `alert-box alert-${type}`;
+      alertBox.textContent = msg;
     }
 
-    // Fungsi Logout
+    // TAMPILKAN DASHBOARD
+    function tampilkanDashboard(nama, kelas) {
+      document.getElementById('loginCard').style.display = 'none';
+      document.getElementById('dashboardCard').style.display = 'block';
+      document.getElementById('welcomeText').textContent = `Selamat Datang, ${nama}!`;
+      document.getElementById('badgeKelas').textContent = `Kelas/Status: ${kelas || 'Aktif'}`;
+      
+      loadJadwal();
+    }
+
     function handleLogout() {
       localStorage.clear();
       location.reload();
     }
 
-    // Fungsi Mengirim Reservasi ke Firebase
+    // KIRIM RESERVASI
     async function kirimReservasi() {
       const tanggal = document.getElementById('tanggalResv').value;
       const keperluan = document.getElementById('keperluanResv').value;
@@ -155,7 +522,7 @@
       const kelasUser = localStorage.getItem('userKelas');
 
       if (!tanggal || !keperluan) {
-        alert("Tanggal dan keperluan harus diisi!");
+        alert("Mohon isi tanggal dan keperluan pengajuan!");
         return;
       }
 
@@ -168,16 +535,15 @@
           status: 'pending',
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
-        alert("Reservasi berhasil dikirim! Menunggu persetujuan Admin.");
-        document.getElementById('keperluanResv').value = ''; 
+        alert("Pengajuan berhasil dikirim! Menunggu persetujuan Admin.");
+        document.getElementById('keperluanResv').value = '';
       } catch (e) {
-        console.error("Gagal mengirim:", e);
-        alert("Gagal mengirim ke database Firebase.");
+        alert("Gagal menyimpan ke Firebase Firestore.");
       }
     }
 
-    // Fungsi Memuat Jadwal dari Firebase
-    function loadJadwalTerkonfirmasi() {
+    // LOAD JADWAL
+    function loadJadwal() {
       const listJadwal = document.getElementById('listJadwal');
       
       db.collection('reservasi')
@@ -185,20 +551,23 @@
         .onSnapshot((snapshot) => {
           listJadwal.innerHTML = "";
           if (snapshot.empty) {
-            listJadwal.innerHTML = "<li>Belum ada jadwal terkonfirmasi.</li>";
+            listJadwal.innerHTML = "<p style='font-size:0.85rem; color:#64748b;'>Belum ada peminjaman terkonfirmasi.</p>";
             return;
           }
 
           snapshot.forEach((doc) => {
             let data = doc.data();
-            let li = document.createElement('li');
-            li.innerHTML = `<strong>${data.tanggal}</strong>: ${data.keperluan} <br><small>Oleh: ${data.nama} (${data.kelas})</small>`;
-            li.style.marginBottom = "10px";
-            listJadwal.appendChild(li);
+            let div = document.createElement('div');
+            div.className = 'schedule-item';
+            div.innerHTML = `
+              <div>
+                <strong style="color:#132b23; font-size:0.9rem;">${data.keperluan}</strong>
+                <p style="font-size:0.78rem; color:#64748b; margin-top:2px;">Oleh: ${data.nama} (${data.kelas || '-'})</p>
+              </div>
+              <span style="font-size:0.8rem; font-weight:700; color:#1f382f; background:#edf4f0; padding:4px 10px; border-radius:6px;">${data.tanggal}</span>
+            `;
+            listJadwal.appendChild(div);
           });
-        }, (error) => {
-          console.error("Gagal memuat data Firestore:", error);
-          listJadwal.innerHTML = "<li style='color:red;'>Gagal memuat data kalender. Cek Rules Firestore!</li>";
         });
     }
   </script>

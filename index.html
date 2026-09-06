@@ -422,6 +422,27 @@
           </tbody>
         </table>
       </div>
+
+      <!-- KELOLA JADWAL TERKONFIRMASI: Pindahkan & Batalkan -->
+      <div class="card" style="margin-top: 28px;">
+        <h2>Kelola Jadwal Terkonfirmasi</h2>
+        <p style="font-size: 13px; color: var(--ink-soft); margin: -8px 0 16px;">Pindahkan jadwal ke tanggal/jam lain, atau batalkan jadwal yang sudah disetujui.</p>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Peminjam</th>
+              <th>Waktu Penggunaan</th>
+              <th>Keperluan Acara</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="adminApprovedContainer">
+            <tr>
+              <td colspan="4" style="text-align: center; color: var(--ink-soft);">Memuat jadwal terkonfirmasi...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <!-- PANEL 3: KALENDER -->
@@ -440,6 +461,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 6l6 6-6 6"/></svg>
             </button>
           </div>
+          <button id="btnAddEvent" class="btn-sm" style="display:none; background: var(--ink); color:#fff; padding:9px 16px; border-radius:8px;" type="button">+ Tambah Event</button>
         </div>
 
         <div class="cal-legend">
@@ -472,6 +494,45 @@
 
       <div class="rundown-list" id="rundownList"></div>
       <div class="rundown-empty" id="rundownEmpty" style="display:none;">Tidak ada jadwal untuk tanggal ini.</div>
+
+      <button id="btnAddEventForDay" class="btn-submit" style="display:none; margin-top:16px;" type="button">+ Tambah Event di Tanggal Ini</button>
+    </div>
+  </div>
+
+  <!-- MODAL FORM EVENT: dipakai untuk Tambah Event baru & Pindahkan jadwal (edit) -->
+  <div class="modal-overlay" id="eventFormModal">
+    <div class="modal-box">
+      <button class="modal-close" id="eventFormClose" aria-label="Tutup" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+      <span class="modal-eyebrow" id="eventFormEyebrow">Kalender Admin</span>
+      <h3 id="eventFormTitle">Tambah Event</h3>
+
+      <form id="eventForm" style="margin-top: 18px;">
+        <div class="form-group">
+          <label>Tanggal</label>
+          <input type="date" id="eventTanggal" required>
+        </div>
+        <div style="display:flex; gap:16px;">
+          <div class="form-group" style="flex:1;">
+            <label>Jam Mulai</label>
+            <input type="time" id="eventJamMulai" required>
+          </div>
+          <div class="form-group" style="flex:1;">
+            <label>Jam Selesai</label>
+            <input type="time" id="eventJamSelesai" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Nama Kegiatan / Keperluan</label>
+          <input type="text" id="eventKeperluan" placeholder="Contoh: Ujian Praktik, Rapat Wali Murid" required>
+        </div>
+        <div class="form-group">
+          <label>Peminjam / Penyelenggara</label>
+          <input type="text" id="eventPeminjam" placeholder="Contoh: Admin Sekolah" required>
+        </div>
+        <button type="submit" class="btn-submit" id="eventFormSubmit">Simpan Event</button>
+      </form>
     </div>
   </div>
 
@@ -523,9 +584,16 @@
       const pageSubtitle = document.getElementById('pageSubtitle');
       const navItems = document.querySelectorAll('.nav-item');
 
-      if (savedRole.toLowerCase() === 'admin') {
+      const isAdmin = savedRole.toLowerCase() === 'admin';
+      const btnAddEvent = document.getElementById('btnAddEvent');
+      if (isAdmin) {
+        btnAddEvent.style.display = 'inline-flex';
+      }
+
+      if (isAdmin) {
         adminPanel.classList.add('active');
         loadAdminRequests();
+        loadAdminApprovedSchedules();
       } else {
         userPanel.classList.add('active');
         loadApprovedSchedules();
@@ -544,9 +612,10 @@
         pageTitle.textContent = "Portal Reservasi Audio Visual";
         pageSubtitle.textContent = "Cek ketersediaan jadwal dan ajukan permohonan pemakaian ruang AVR.";
         
-        if (savedRole.toLowerCase() === 'admin') {
+        if (isAdmin) {
           adminPanel.classList.add('active');
           loadAdminRequests();
+          loadAdminApprovedSchedules();
         } else {
           userPanel.classList.add('active');
           loadApprovedSchedules();
@@ -685,6 +754,70 @@
         }
       };
 
+      // ================== FITUR ADMIN: KELOLA JADWAL TERKONFIRMASI ==================
+      // Menampilkan semua reservasi berstatus 'approved' beserta tombol
+      // Pindahkan (edit tanggal/jam) dan Batalkan.
+      async function loadAdminApprovedSchedules() {
+        const container = document.getElementById('adminApprovedContainer');
+        if(!container) return;
+
+        try {
+          const snapshot = await db.collection('reservasi')
+            .where('status', '==', 'approved')
+            .orderBy('tanggal', 'asc')
+            .get();
+
+          if(snapshot.empty) {
+            container.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--ink-soft);">Belum ada jadwal terkonfirmasi.</td></tr>';
+            return;
+          }
+
+          let html = '';
+          snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            const docId = docSnap.id;
+            html += `
+              <tr>
+                <td><strong>${data.peminjam || 'Umum'}</strong></td>
+                <td><strong>${data.tanggal || '-'}</strong><br><span style="color:#5c675f; font-size:12px;">${data.jamMulai || ''} - ${data.jamSelesai || ''}</span></td>
+                <td>${data.keperluan || '-'}</td>
+                <td>
+                  <div class="action-btns">
+                    <button class="btn-sm" style="background: var(--chalk-gold-dim); color:#fff;"
+                      onclick='openEditEventModal("${docId}", ${JSON.stringify(data)})'>Pindahkan</button>
+                    <button class="btn-sm btn-reject" onclick="cancelApprovedSchedule('${docId}')">Batalkan</button>
+                  </div>
+                </td>
+              </tr>
+            `;
+          });
+          container.innerHTML = html;
+        } catch (err) {
+          console.error("Gagal memuat jadwal terkonfirmasi (admin):", err);
+          container.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--danger);">Gagal memuat data.</td></tr>';
+        }
+      }
+
+      // Membatalkan jadwal yang sudah disetujui.
+      // Status diubah jadi 'dibatalkan' (bukan dihapus permanen) supaya masih ada riwayatnya.
+      // Kalau kamu ingin menghapus datanya total dari Firestore, ganti isi try{} ini dengan:
+      //   await db.collection('reservasi').doc(docId).delete();
+      window.cancelApprovedSchedule = async function(docId) {
+        const yakin = confirm("Batalkan jadwal ini? Jadwal akan hilang dari kalender dan daftar jadwal terkonfirmasi.");
+        if(!yakin) return;
+        try {
+          await db.collection('reservasi').doc(docId).update({ status: 'dibatalkan' });
+          alert("Jadwal berhasil dibatalkan.");
+          loadAdminApprovedSchedules();
+          if (document.getElementById('kalenderPanel').classList.contains('active')) {
+            renderCalendar(currentYear, currentMonth);
+          }
+        } catch (err) {
+          console.error("Gagal membatalkan jadwal:", err);
+          alert("Gagal membatalkan jadwal.");
+        }
+      };
+
       // ================== LOGIKA KALENDER DARI FIRESTORE ==================
       const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
       const dayNamesFull = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
@@ -719,6 +852,9 @@
           snapshot.forEach(docSnap => {
             const item = docSnap.data();
             const dateStr = item.tanggal;
+
+            // Jadwal yang sudah dibatalkan admin atau ditolak tidak perlu tampil di kalender.
+            if (item.status === 'dibatalkan' || item.status === 'rejected') return;
 
             if (!data[dateStr]) {
               data[dateStr] = { status: 'empty', items: [] };
@@ -802,6 +938,8 @@
         `).join('');
       }
 
+      let selectedDateForAdd = null;
+
       function openDayModal(dateStr){
         const overlay = document.getElementById('dayModal');
         const info = currentMonthData[dateStr] || { status: 'empty', items: [] };
@@ -809,6 +947,15 @@
         document.getElementById('modalDate').textContent = formatReadableDate(dateStr);
         setStatusChip(info.status);
         renderRundown(info.items);
+
+        const btnAddEventForDay = document.getElementById('btnAddEventForDay');
+        if (isAdmin) {
+          selectedDateForAdd = dateStr;
+          btnAddEventForDay.style.display = 'block';
+        } else {
+          btnAddEventForDay.style.display = 'none';
+        }
+
         overlay.classList.add('show');
       }
 
@@ -828,6 +975,101 @@
         currentMonth++;
         if(currentMonth > 11){ currentMonth = 0; currentYear++; }
         renderCalendar(currentYear, currentMonth);
+      });
+
+      // ================== FITUR ADMIN: TAMBAH EVENT & PINDAHKAN JADWAL ==================
+      const eventFormModal = document.getElementById('eventFormModal');
+      const eventForm = document.getElementById('eventForm');
+      const eventFormTitle = document.getElementById('eventFormTitle');
+      const eventFormEyebrow = document.getElementById('eventFormEyebrow');
+      const eventFormSubmit = document.getElementById('eventFormSubmit');
+      let editingEventId = null; // null = mode tambah baru, terisi = mode pindahkan/edit
+
+      function closeEventFormModal(){
+        eventFormModal.classList.remove('show');
+        eventForm.reset();
+        editingEventId = null;
+      }
+
+      // Tombol "+ Tambah Event" di header kalender (tanpa tanggal terisi otomatis)
+      document.getElementById('btnAddEvent').addEventListener('click', () => {
+        editingEventId = null;
+        eventFormEyebrow.textContent = 'Kalender Admin';
+        eventFormTitle.textContent = 'Tambah Event';
+        eventFormSubmit.textContent = 'Simpan Event';
+        eventForm.reset();
+        eventFormModal.classList.add('show');
+      });
+
+      // Tombol "+ Tambah Event di Tanggal Ini" di dalam modal rundown harian
+      document.getElementById('btnAddEventForDay').addEventListener('click', () => {
+        closeDayModal();
+        editingEventId = null;
+        eventFormEyebrow.textContent = 'Kalender Admin';
+        eventFormTitle.textContent = 'Tambah Event';
+        eventFormSubmit.textContent = 'Simpan Event';
+        eventForm.reset();
+        if (selectedDateForAdd) {
+          document.getElementById('eventTanggal').value = selectedDateForAdd;
+        }
+        eventFormModal.classList.add('show');
+      });
+
+      // Dipanggil dari tombol "Pindahkan" di tabel admin (lihat loadAdminApprovedSchedules)
+      window.openEditEventModal = function(docId, data){
+        editingEventId = docId;
+        eventFormEyebrow.textContent = 'Pindahkan Jadwal';
+        eventFormTitle.textContent = 'Ubah Tanggal / Jam Jadwal';
+        eventFormSubmit.textContent = 'Simpan Perubahan';
+
+        document.getElementById('eventTanggal').value = data.tanggal || '';
+        document.getElementById('eventJamMulai').value = data.jamMulai || '';
+        document.getElementById('eventJamSelesai').value = data.jamSelesai || '';
+        document.getElementById('eventKeperluan').value = data.keperluan || '';
+        document.getElementById('eventPeminjam').value = data.peminjam || '';
+
+        eventFormModal.classList.add('show');
+      };
+
+      document.getElementById('eventFormClose').addEventListener('click', closeEventFormModal);
+      eventFormModal.addEventListener('click', (e) => {
+        if(e.target.id === 'eventFormModal') closeEventFormModal();
+      });
+
+      // Submit form: mode Tambah (add doc baru berstatus approved) atau mode Pindahkan (update doc yang ada)
+      eventForm.addEventListener('submit', async function(e){
+        e.preventDefault();
+
+        const payload = {
+          tanggal: document.getElementById('eventTanggal').value,
+          jamMulai: document.getElementById('eventJamMulai').value,
+          jamSelesai: document.getElementById('eventJamSelesai').value,
+          keperluan: document.getElementById('eventKeperluan').value,
+          peminjam: document.getElementById('eventPeminjam').value,
+          status: 'approved'
+        };
+
+        try {
+          if (editingEventId) {
+            // Mode Pindahkan: update dokumen yang sudah ada, status tetap approved.
+            await db.collection('reservasi').doc(editingEventId).update(payload);
+            alert("Jadwal berhasil dipindahkan.");
+          } else {
+            // Mode Tambah: admin membuat event baru langsung berstatus approved (tanpa perlu persetujuan).
+            payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+            await db.collection('reservasi').add(payload);
+            alert("Event baru berhasil ditambahkan ke kalender.");
+          }
+
+          closeEventFormModal();
+          loadAdminApprovedSchedules();
+          if (document.getElementById('kalenderPanel').classList.contains('active')) {
+            renderCalendar(currentYear, currentMonth);
+          }
+        } catch (err) {
+          console.error("Gagal menyimpan event:", err);
+          alert("Gagal menyimpan event. Coba lagi.");
+        }
       });
     });
   </script>

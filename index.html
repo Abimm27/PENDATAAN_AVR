@@ -375,6 +375,10 @@
           <h2>Formulir Peminjaman</h2>
           <form id="reservationForm">
             <div class="form-group">
+              <label>Nama Penyelenggara / Penanggung Jawab</label>
+              <input type="text" id="penyelenggaraInput" placeholder="Contoh: Budi Santoso (Ketua OSIS)" required>
+            </div>
+            <div class="form-group">
               <label>Tanggal Pemakaian</label>
               <input type="date" id="tanggalInput" required>
             </div>
@@ -657,10 +661,16 @@
         reservationForm.addEventListener('submit', async function(e) {
           e.preventDefault();
           
+          const penyelenggara = document.getElementById('penyelenggaraInput').value.trim();
           const tanggal = document.getElementById('tanggalInput').value;
           const jamMulai = document.getElementById('jamMulaiInput').value;
           const jamSelesai = document.getElementById('jamSelesaiInput').value;
           const keperluan = document.getElementById('keperluanInput').value;
+
+          if(!penyelenggara){
+            alert("Nama penyelenggara / penanggung jawab wajib diisi.");
+            return;
+          }
 
           const validasi = validateEventTiming(tanggal, jamMulai, jamSelesai);
           if(!validasi.valid){
@@ -674,18 +684,28 @@
               jamMulai: jamMulai,
               jamSelesai: jamSelesai,
               keperluan: keperluan,
-              peminjam: savedRole,
+              peminjam: penyelenggara,
+              pengajuRole: savedRole,
               status: 'pending',
               createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 
             alert("Permohonan reservasi berhasil dikirim ke database! Menunggu persetujuan admin.");
             reservationForm.reset();
+            // Isi ulang nama penyelenggara dengan nama akun (kalau ada) supaya tidak perlu ketik ulang tiap kali.
+            if (savedName) {
+              document.getElementById('penyelenggaraInput').value = savedName;
+            }
           } catch (err) {
             console.error("Gagal mengirim reservasi:", err);
             alert("Terjadi kesalahan saat mengirim data. Coba lagi.");
           }
         });
+
+        // Prefill nama penyelenggara dari nama akun (kalau login.html menyimpannya), tetap bisa diedit manual.
+        if (savedName) {
+          document.getElementById('penyelenggaraInput').value = savedName;
+        }
       }
 
       // 4. Load Data Jadwal Terkonfirmasi untuk Siswa
@@ -743,7 +763,7 @@
             const docId = docSnap.id;
             html += `
               <tr>
-                <td><strong>${data.peminjam || 'Siswa'}</strong></td>
+                <td><strong>${data.peminjam || 'Tidak diketahui'}</strong>${data.pengajuRole ? `<br><span style="color:#5c675f; font-size:12px;">${data.pengajuRole}</span>` : ''}</td>
                 <td><strong>${data.tanggal || '-'}</strong><br><span style="color:#5c675f; font-size:12px;">${data.jamMulai || ''} - ${data.jamSelesai || ''}</span></td>
                 <td>${data.keperluan || '-'}</td>
                 <td>
@@ -798,7 +818,7 @@
             const docId = docSnap.id;
             html += `
               <tr>
-                <td><strong>${data.peminjam || 'Umum'}</strong></td>
+                <td><strong>${data.peminjam || 'Tidak diketahui'}</strong>${data.pengajuRole ? `<br><span style="color:#5c675f; font-size:12px;">${data.pengajuRole}</span>` : ''}</td>
                 <td><strong>${data.tanggal || '-'}</strong><br><span style="color:#5c675f; font-size:12px;">${data.jamMulai || ''} - ${data.jamSelesai || ''}</span></td>
                 <td>${data.keperluan || '-'}</td>
                 <td>
@@ -1170,6 +1190,11 @@
           peminjam: document.getElementById('eventPeminjam').value,
           status: 'approved'
         };
+        // Tandai sebagai event buatan Admin hanya untuk event baru.
+        // Saat mode "Pindahkan", pengajuRole asli (Siswa/Guru) sengaja tidak ditimpa.
+        if (!editingEventId) {
+          payload.pengajuRole = 'Admin';
+        }
 
         const validasi = validateEventTiming(payload.tanggal, payload.jamMulai, payload.jamSelesai);
         if(!validasi.valid){

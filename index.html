@@ -190,6 +190,7 @@
   .legend-dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
   .legend-dot.approved { background: var(--success); }
   .legend-dot.pending { background: var(--chalk-gold); }
+  .legend-dot.ongoing { background: var(--danger); }
   .legend-dot.empty { background: var(--paper); border: 1.5px solid rgba(31,59,50,0.25); }
 
   .cal-weekdays {
@@ -240,6 +241,17 @@
   .cal-day.status-pending { background: rgba(232,185,78,0.18); border-color: rgba(232,185,78,0.5); }
   .cal-day.status-pending .day-status-dot { background: var(--chalk-gold-dim); }
   .cal-day.status-empty .day-status-dot { background: transparent; border: 1px solid rgba(31,59,50,0.2); }
+
+  .cal-day.status-ongoing {
+    background: rgba(193,84,58,0.16);
+    border-color: rgba(193,84,58,0.55);
+    animation: pulseOngoing 1.8s ease-in-out infinite;
+  }
+  .cal-day.status-ongoing .day-status-dot { background: var(--danger); }
+  @keyframes pulseOngoing {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(193,84,58,0.35); }
+    50% { box-shadow: 0 0 0 6px rgba(193,84,58,0); }
+  }
 
   .cal-loading {
     padding: 40px 0;
@@ -312,6 +324,7 @@
   .modal-status-chip.approved { background: rgba(58,139,92,0.12); color: var(--success); }
   .modal-status-chip.pending { background: rgba(232,185,78,0.22); color: var(--chalk-gold-dim); }
   .modal-status-chip.empty { background: rgba(31,59,50,0.06); color: var(--ink-soft); }
+  .modal-status-chip.ongoing { background: rgba(193,84,58,0.14); color: var(--danger); }
   .modal-status-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 
   .rundown-list { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; }
@@ -467,6 +480,7 @@
         <div class="cal-legend">
           <span><span class="legend-dot approved"></span>Approved</span>
           <span><span class="legend-dot pending"></span>Pending</span>
+          <span><span class="legend-dot ongoing"></span>Sedang Berlangsung</span>
           <span><span class="legend-dot empty"></span>Tidak ada jadwal</span>
         </div>
 
@@ -647,6 +661,12 @@
           const jamMulai = document.getElementById('jamMulaiInput').value;
           const jamSelesai = document.getElementById('jamSelesaiInput').value;
           const keperluan = document.getElementById('keperluanInput').value;
+
+          const validasi = validateEventTiming(tanggal, jamMulai, jamSelesai);
+          if(!validasi.valid){
+            alert(validasi.message);
+            return;
+          }
 
           try {
             await db.collection('reservasi').add({
@@ -838,6 +858,34 @@
         return `${dayNamesFull[dateObj.getDay()]}, ${d} ${monthNames[m - 1]} ${y}`;
       }
 
+      // ================== VALIDASI: TANGGAL LAMPAU & JAM MUNDUR ==================
+      // Dipakai di form reservasi Siswa/Guru maupun form Tambah/Pindahkan Event Admin.
+      // Format tanggal "YYYY-MM-DD" dan jam "HH:MM" dari <input type="date/time"> aman
+      // dibandingkan langsung sebagai string (perbandingan leksikografis = perbandingan kronologis).
+      function validateEventTiming(tanggal, jamMulai, jamSelesai){
+        const todayStr = formatDateKey(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+
+        if(!tanggal || tanggal < todayStr){
+          return { valid: false, message: 'Tidak bisa mengajukan/memindahkan jadwal ke tanggal yang sudah lewat. Pilih hari ini atau tanggal setelahnya.' };
+        }
+        if(!jamMulai || !jamSelesai){
+          return { valid: false, message: 'Jam mulai dan jam selesai wajib diisi.' };
+        }
+        if(jamSelesai <= jamMulai){
+          return { valid: false, message: 'Jam selesai harus lebih besar dari jam mulai. Contoh yang benar: 12:00 - 13:00 (bukan 13:00 - 12:00).' };
+        }
+        return { valid: true, message: '' };
+      }
+
+      // Batasi date-picker browser agar tidak bisa pilih tanggal sebelum hari ini (lapisan UX tambahan).
+      (function restrictPastDates(){
+        const todayStr = formatDateKey(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+        const tanggalInputEl = document.getElementById('tanggalInput');
+        const eventTanggalEl = document.getElementById('eventTanggal');
+        if(tanggalInputEl) tanggalInputEl.min = todayStr;
+        if(eventTanggalEl) eventTanggalEl.min = todayStr;
+      })();
+
       async function fetchCalendarDataFromFirestore(year, month){
         const data = {};
         const startDate = formatDateKey(year, month, 1);
@@ -864,7 +912,10 @@
             data[dateStr].items.push({
               time: `${item.jamMulai || ''} - ${item.jamSelesai || ''}`,
               title: item.keperluan || 'Kegiatan AVR',
-              note: `Peminjam: ${item.peminjam || 'Umum'} (${item.status})`
+              note: `Peminjam: ${item.peminjam || 'Umum'} (${item.status})`,
+              jamMulai: item.jamMulai || '',
+              jamSelesai: item.jamSelesai || '',
+              rawStatus: item.status
             });
 
             // Tentukan prioritas status hari (jika ada approved, prioritaskan approved)
@@ -909,16 +960,54 @@
         grid.querySelectorAll('.cal-day:not(.empty-cell)').forEach(cell => {
           cell.addEventListener('click', () => openDayModal(cell.dataset.date));
         });
+
+        // Cek langsung saat render: kalau ada event approved yang sedang berjalan hari ini, tandai merah.
+        updateOngoingStatus();
       }
+
+      // ================== FITUR: EVENT 'SEDANG BERLANGSUNG' (real-time) ==================
+      // Mengecek apakah ada event ber-status 'approved' hari ini yang jam-nya sedang berjalan
+      // (jamMulai <= sekarang < jamSelesai). Kalau ya, ubah kotak tanggal hari ini jadi merah.
+      // Kalau sudah lewat jamSelesai, otomatis kembali ke warna status normalnya (approved/pending/kosong).
+      // Dipanggil ulang tiap 30 detik lewat setInterval, jadi berubah sendiri tanpa reload halaman.
+      function updateOngoingStatus(){
+        const todayStr = formatDateKey(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+        const cell = document.querySelector(`.cal-day[data-date="${todayStr}"]`);
+        if(!cell) return; // kalender sedang menampilkan bulan lain, tidak ada tanggal hari ini di layar
+
+        const info = currentMonthData[todayStr];
+        if(!info) return;
+
+        const now = new Date();
+        const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+        const isOngoing = (info.items || []).some(it => {
+          if(it.rawStatus !== 'approved' || !it.jamMulai || !it.jamSelesai) return false;
+          const [sh, sm] = it.jamMulai.split(':').map(Number);
+          const [eh, em] = it.jamSelesai.split(':').map(Number);
+          const startMinutes = sh * 60 + sm;
+          const endMinutes = eh * 60 + em;
+          return nowMinutes >= startMinutes && nowMinutes < endMinutes;
+        });
+
+        cell.classList.remove('status-approved', 'status-pending', 'status-empty', 'status-ongoing');
+        cell.classList.add(isOngoing ? 'status-ongoing' : ('status-' + info.status));
+      }
+
+      // Cek ulang tiap 30 detik supaya warna "sedang berlangsung" otomatis muncul & hilang sendiri.
+      setInterval(updateOngoingStatus, 30000);
 
       function setStatusChip(status){
         const chip = document.getElementById('modalStatusChip');
         const text = document.getElementById('modalStatusText');
         chip.className = 'modal-status-chip ' + status;
-        text.textContent = status === 'approved' ? 'Approved' : status === 'pending' ? 'Pending' : 'Belum ada jadwal';
+        text.textContent = status === 'ongoing' ? 'Sedang Berlangsung'
+          : status === 'approved' ? 'Approved'
+          : status === 'pending' ? 'Pending'
+          : 'Belum ada jadwal';
       }
 
-      function renderRundown(items){
+      function renderRundown(items, dateStr){
         const list = document.getElementById('rundownList');
         const empty = document.getElementById('rundownEmpty');
         if(!items || items.length === 0){
@@ -927,26 +1016,59 @@
           return;
         }
         empty.style.display = 'none';
-        list.innerHTML = items.map(item => `
-          <div class="rundown-item">
-            <div class="rundown-time">${item.time}</div>
-            <div class="rundown-info">
-              <h4>${item.title}</h4>
-              <p>${item.note || ''}</p>
+
+        const todayStr = formatDateKey(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+        const now = new Date();
+        const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+        list.innerHTML = items.map(item => {
+          let ongoingBadge = '';
+          if(dateStr === todayStr && item.rawStatus === 'approved' && item.jamMulai && item.jamSelesai){
+            const [sh, sm] = item.jamMulai.split(':').map(Number);
+            const [eh, em] = item.jamSelesai.split(':').map(Number);
+            const startMinutes = sh * 60 + sm;
+            const endMinutes = eh * 60 + em;
+            if(nowMinutes >= startMinutes && nowMinutes < endMinutes){
+              ongoingBadge = '<div style="color: var(--danger); font-weight:700; font-size:11px; margin-bottom:2px;">● SEDANG BERLANGSUNG</div>';
+            }
+          }
+          return `
+            <div class="rundown-item">
+              <div class="rundown-time">${item.time}</div>
+              <div class="rundown-info">
+                ${ongoingBadge}<h4>${item.title}</h4>
+                <p>${item.note || ''}</p>
+              </div>
             </div>
-          </div>
-        `).join('');
+          `;
+        }).join('');
       }
 
       let selectedDateForAdd = null;
 
+      function isDateOngoingNow(dateStr, items){
+        const todayStr = formatDateKey(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+        if(dateStr !== todayStr) return false;
+        const now = new Date();
+        const nowMinutes = now.getHours() * 60 + now.getMinutes();
+        return (items || []).some(it => {
+          if(it.rawStatus !== 'approved' || !it.jamMulai || !it.jamSelesai) return false;
+          const [sh, sm] = it.jamMulai.split(':').map(Number);
+          const [eh, em] = it.jamSelesai.split(':').map(Number);
+          const startMinutes = sh * 60 + sm;
+          const endMinutes = eh * 60 + em;
+          return nowMinutes >= startMinutes && nowMinutes < endMinutes;
+        });
+      }
+
       function openDayModal(dateStr){
         const overlay = document.getElementById('dayModal');
         const info = currentMonthData[dateStr] || { status: 'empty', items: [] };
+        const effectiveStatus = isDateOngoingNow(dateStr, info.items) ? 'ongoing' : info.status;
 
         document.getElementById('modalDate').textContent = formatReadableDate(dateStr);
-        setStatusChip(info.status);
-        renderRundown(info.items);
+        setStatusChip(effectiveStatus);
+        renderRundown(info.items, dateStr);
 
         const btnAddEventForDay = document.getElementById('btnAddEventForDay');
         if (isAdmin) {
@@ -1048,6 +1170,12 @@
           peminjam: document.getElementById('eventPeminjam').value,
           status: 'approved'
         };
+
+        const validasi = validateEventTiming(payload.tanggal, payload.jamMulai, payload.jamSelesai);
+        if(!validasi.valid){
+          alert(validasi.message);
+          return;
+        }
 
         try {
           if (editingEventId) {

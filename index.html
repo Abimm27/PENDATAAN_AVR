@@ -375,8 +375,9 @@
           <h2>Formulir Peminjaman</h2>
           <form id="reservationForm">
             <div class="form-group">
-              <label>Nama Penyelenggara / Penanggung Jawab</label>
-              <input type="text" id="penyelenggaraInput" placeholder="Contoh: Budi Santoso (Ketua OSIS)" required>
+              <label>Atas Nama Kegiatan / Organisasi (opsional)</label>
+              <input type="text" id="penyelenggaraInput" placeholder="Contoh: OSIS, Pramuka, Panitia Class Meeting">
+              <p id="identitasHint" style="font-size:12px; color: var(--ink-soft); margin-top:4px;">Identitas pengaju tercatat otomatis dari akun kamu yang sedang login. Isi kolom ini hanya kalau reservasi diajukan atas nama sebuah kegiatan/organisasi.</p>
             </div>
             <div class="form-group">
               <label>Tanggal Pemakaian</label>
@@ -554,6 +555,53 @@
     </div>
   </div>
 
+  <!-- MODAL DETAIL PERMOHONAN: muncul saat admin klik salah satu baris pending -->
+  <div class="modal-overlay" id="pendingDetailModal">
+    <div class="modal-box">
+      <button class="modal-close" id="pendingDetailClose" aria-label="Tutup" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+      <span class="modal-eyebrow">Detail Permohonan</span>
+      <h3>Menunggu Persetujuan</h3>
+
+      <div style="margin-top: 18px; display:flex; flex-direction:column; gap: 14px;">
+        <div>
+          <label style="display:block; font-size:12px; font-weight:600; color: var(--ink-soft); margin-bottom:2px;">Nama Pengaju (akun login)</label>
+          <p id="detailPeminjam" style="font-size:15px; font-weight:600;">-</p>
+        </div>
+        <div style="display:flex; gap:24px;">
+          <div>
+            <label style="display:block; font-size:12px; font-weight:600; color: var(--ink-soft); margin-bottom:2px;">Peran</label>
+            <p id="detailRole" style="font-size:14px;">-</p>
+          </div>
+          <div>
+            <label style="display:block; font-size:12px; font-weight:600; color: var(--ink-soft); margin-bottom:2px;">Atas Nama Kegiatan</label>
+            <p id="detailPenyelenggara" style="font-size:14px;">-</p>
+          </div>
+        </div>
+        <div style="display:flex; gap:24px;">
+          <div>
+            <label style="display:block; font-size:12px; font-weight:600; color: var(--ink-soft); margin-bottom:2px;">Tanggal</label>
+            <p id="detailTanggal" style="font-size:14px;">-</p>
+          </div>
+          <div>
+            <label style="display:block; font-size:12px; font-weight:600; color: var(--ink-soft); margin-bottom:2px;">Jam</label>
+            <p id="detailJam" style="font-size:14px;">-</p>
+          </div>
+        </div>
+        <div>
+          <label style="display:block; font-size:12px; font-weight:600; color: var(--ink-soft); margin-bottom:2px;">Keperluan / Acara</label>
+          <p id="detailKeperluan" style="font-size:14px; line-height:1.5;">-</p>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:12px; margin-top: 24px;">
+        <button id="detailBtnApprove" class="btn-sm btn-approve" style="flex:1; padding:11px; font-size:13.5px;" type="button">Setujui</button>
+        <button id="detailBtnReject" class="btn-sm btn-reject" style="flex:1; padding:11px; font-size:13.5px;" type="button">Tolak</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Firebase SDK (Modular / Compat Version) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -658,6 +706,13 @@
       // 3. Fungsionalitas Form Reservasi Siswa -> Simpan ke Firestore
       const reservationForm = document.getElementById('reservationForm');
       if(reservationForm) {
+        // Tampilkan identitas akun yang sedang login di keterangan bawah field "Atas Nama Kegiatan".
+        const identitasHint = document.getElementById('identitasHint');
+        const identitasAkun = savedName ? `${savedName} (${savedRole})` : savedRole;
+        if(identitasHint){
+          identitasHint.textContent = `Identitas pengaju tercatat otomatis sebagai "${identitasAkun}" dari akun kamu yang sedang login. Isi kolom di atas hanya kalau reservasi diajukan atas nama sebuah kegiatan/organisasi.`;
+        }
+
         reservationForm.addEventListener('submit', async function(e) {
           e.preventDefault();
           
@@ -666,11 +721,6 @@
           const jamMulai = document.getElementById('jamMulaiInput').value;
           const jamSelesai = document.getElementById('jamSelesaiInput').value;
           const keperluan = document.getElementById('keperluanInput').value;
-
-          if(!penyelenggara){
-            alert("Nama penyelenggara / penanggung jawab wajib diisi.");
-            return;
-          }
 
           const validasi = validateEventTiming(tanggal, jamMulai, jamSelesai);
           if(!validasi.valid){
@@ -684,28 +734,22 @@
               jamMulai: jamMulai,
               jamSelesai: jamSelesai,
               keperluan: keperluan,
-              peminjam: penyelenggara,
+              // Identitas utama SELALU dari akun terverifikasi saat login (tidak bisa diketik bebas oleh pengaju).
+              peminjam: savedName || savedRole,
               pengajuRole: savedRole,
+              // Field opsional: nama kegiatan/organisasi yang diwakili, sekadar info tambahan (bukan identitas).
+              penyelenggara: penyelenggara || '',
               status: 'pending',
               createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 
             alert("Permohonan reservasi berhasil dikirim ke database! Menunggu persetujuan admin.");
             reservationForm.reset();
-            // Isi ulang nama penyelenggara dengan nama akun (kalau ada) supaya tidak perlu ketik ulang tiap kali.
-            if (savedName) {
-              document.getElementById('penyelenggaraInput').value = savedName;
-            }
           } catch (err) {
             console.error("Gagal mengirim reservasi:", err);
             alert("Terjadi kesalahan saat mengirim data. Coba lagi.");
           }
         });
-
-        // Prefill nama penyelenggara dari nama akun (kalau login.html menyimpannya), tetap bisa diedit manual.
-        if (savedName) {
-          document.getElementById('penyelenggaraInput').value = savedName;
-        }
       }
 
       // 4. Load Data Jadwal Terkonfirmasi untuk Siswa
@@ -758,18 +802,20 @@
           }
 
           let html = '';
+          pendingRequestsCache = {};
           snapshot.forEach(docSnap => {
             const data = docSnap.data();
             const docId = docSnap.id;
+            pendingRequestsCache[docId] = data;
             html += `
-              <tr>
+              <tr style="cursor:pointer;" onclick="openPendingDetailModal('${docId}')">
                 <td><strong>${data.peminjam || 'Tidak diketahui'}</strong>${data.pengajuRole ? `<br><span style="color:#5c675f; font-size:12px;">${data.pengajuRole}</span>` : ''}</td>
                 <td><strong>${data.tanggal || '-'}</strong><br><span style="color:#5c675f; font-size:12px;">${data.jamMulai || ''} - ${data.jamSelesai || ''}</span></td>
                 <td>${data.keperluan || '-'}</td>
                 <td>
                   <div class="action-btns">
-                    <button class="btn-sm btn-approve" onclick="updateStatus('${docId}', 'approved')">Setujui</button>
-                    <button class="btn-sm btn-reject" onclick="updateStatus('${docId}', 'rejected')">Tolak</button>
+                    <button class="btn-sm btn-approve" onclick="event.stopPropagation(); updateStatus('${docId}', 'approved')">Setujui</button>
+                    <button class="btn-sm btn-reject" onclick="event.stopPropagation(); updateStatus('${docId}', 'rejected')">Tolak</button>
                   </div>
                 </td>
               </tr>
@@ -787,12 +833,45 @@
         try {
           await db.collection('reservasi').doc(docId).update({ status: newStatus });
           alert(`Reservasi berhasil ${newStatus === 'approved' ? 'disetujui' : 'ditolak'}!`);
+          closePendingDetailModal();
           loadAdminRequests(); // Refresh tabel admin
         } catch (err) {
           console.error("Gagal mengubah status:", err);
           alert("Gagal memproses aksi.");
         }
       };
+
+      // ================== FITUR ADMIN: DETAIL PERMOHONAN PENDING ==================
+      // Cache data pending (diisi ulang tiap loadAdminRequests()) supaya klik baris
+      // tidak perlu fetch ulang ke Firestore.
+      let pendingRequestsCache = {};
+
+      window.openPendingDetailModal = function(docId){
+        const data = pendingRequestsCache[docId];
+        if(!data) return;
+
+        document.getElementById('detailPeminjam').textContent = data.peminjam || 'Tidak diketahui';
+        document.getElementById('detailRole').textContent = data.pengajuRole || '-';
+        document.getElementById('detailPenyelenggara').textContent = data.penyelenggara ? data.penyelenggara : '(tidak diisi)';
+        document.getElementById('detailTanggal').textContent = data.tanggal ? formatReadableDate(data.tanggal) : '-';
+        document.getElementById('detailJam').textContent = `${data.jamMulai || '-'} - ${data.jamSelesai || '-'}`;
+        document.getElementById('detailKeperluan').textContent = data.keperluan || '-';
+
+        const btnSetujui = document.getElementById('detailBtnApprove');
+        const btnTolak = document.getElementById('detailBtnReject');
+        btnSetujui.onclick = () => updateStatus(docId, 'approved');
+        btnTolak.onclick = () => updateStatus(docId, 'rejected');
+
+        document.getElementById('pendingDetailModal').classList.add('show');
+      };
+
+      function closePendingDetailModal(){
+        document.getElementById('pendingDetailModal').classList.remove('show');
+      }
+      document.getElementById('pendingDetailClose').addEventListener('click', closePendingDetailModal);
+      document.getElementById('pendingDetailModal').addEventListener('click', (e) => {
+        if(e.target.id === 'pendingDetailModal') closePendingDetailModal();
+      });
 
       // ================== FITUR ADMIN: KELOLA JADWAL TERKONFIRMASI ==================
       // Menampilkan semua reservasi berstatus 'approved' beserta tombol

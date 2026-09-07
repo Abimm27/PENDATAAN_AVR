@@ -631,7 +631,8 @@
     submitBtn.disabled = true;
 
     try{
-      const url = `${APPS_SCRIPT_URL}?nisn=${encodeURIComponent(enteredId)}&role=${encodeURIComponent(activeRole)}`;
+      // TAMBAHKAN &password= di sini agar kata sandi ikut dikirim ke Apps Script
+      const url = `${APPS_SCRIPT_URL}?nisn=${encodeURIComponent(enteredId)}&password=${encodeURIComponent(enteredPass)}&role=${encodeURIComponent(activeRole)}`;
       const response = await fetch(url);
       const result = await response.json();
 
@@ -648,7 +649,7 @@
       } else if(result.status === 'inactive'){
         showError('Akun ini sudah tidak aktif / sudah lulus.');
       } else {
-        showError('NISN/NIP/ID tidak terdaftar di database sekolah.');
+        showError('NISN/NIP/ID atau kata sandi salah.');
       }
     }catch(err){
       console.error('Gagal terhubung ke Apps Script:', err);

@@ -655,6 +655,7 @@
 
   <!-- Firebase SDK (Modular / Compat Version) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
   <script>
@@ -676,13 +677,34 @@
     const db = firebase.firestore();
 
     document.addEventListener('DOMContentLoaded', function() {
-      // 1. Inisialisasi Role & Sesi Login
+      // 1. Cek localStorage dulu (buat tampilan cepat / non-security)
       const savedRole = localStorage.getItem('userRole');
       if (!savedRole) {
         alert("Kamu belum login! Mengarahkan kembali ke halaman login...");
         window.location.href = 'login.html';
-        return; 
+        return;
       }
+
+      // 2. BARU & PENTING: pastikan ada sesi Firebase Auth ASLI juga.
+      // localStorage gampang dipalsukan lewat console browser (misal:
+      // localStorage.setItem('userRole','Admin')) — tapi request.auth di
+      // Firestore Rules cuma percaya sesi Firebase Auth yang sungguhan
+      // (hasil signInWithCustomToken() di login.html). Kalau sesi ini
+      // tidak ada, berarti localStorage-nya dipalsukan / sesi sudah habis.
+      firebase.auth().onAuthStateChanged(function(user) {
+        if (!user) {
+          alert("Sesi login kamu tidak valid atau sudah habis. Mengarahkan ke halaman login...");
+          localStorage.removeItem('userRole');
+          localStorage.removeItem('userName');
+          localStorage.removeItem('userKelas');
+          window.location.href = 'login.html';
+          return;
+        }
+        initDashboard(savedRole);
+      });
+    });
+
+    function initDashboard(savedRole) {
       document.getElementById('displayRole').textContent = savedRole;
       const savedName = localStorage.getItem('userName');
       if (savedName) {
@@ -751,7 +773,11 @@
 
       document.getElementById('logoutBtn').addEventListener('click', function() {
         localStorage.removeItem('userRole');
-        window.location.href = 'login.html';
+        localStorage.removeItem('userName');
+        localStorage.removeItem('userKelas');
+        firebase.auth().signOut().finally(function() {
+          window.location.href = 'login.html';
+        });
       });
 
       // 3. Fungsionalitas Form Reservasi Siswa -> Simpan ke Firestore
@@ -1378,7 +1404,7 @@
           alert("Gagal menyimpan event. Coba lagi.");
         }
       });
-    });
+    } // akhir initDashboard()
   </script>
 </body>
 </html>

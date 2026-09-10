@@ -4,8 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CAKRAWALA — Ruang Audio Visual | SMA Banua Kalsel</title>
-<!-- Favicon Logo SMAN Banua Kalsel -->
-<link rel="icon" type="image/jpeg" href="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAQDAwMDAgQDAwMEBAQFBgoGBgUFBgwICQcKDgwPDg4MDQ0PERYTDxAVEQ0NExoTFRcYGRkZDxIbHRsYHRYYGRj/2wBDAQQEBAYFBgsGBgsYEA0QGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBj/wAARCAC1AMgDASIAAhEBAxEB/8QAHQABAAIDAQEBAQAAAAAAAAAAAAYHBAUIAgMBCf/EAEEQAAEDBAECBAMFBQcDAwUAAAECAwQABQYRBxIhEyIxQQhRYRQycYGRFRYjcqEJFzNCYrHBJGOCGFKSQ1SisrP/xAAcAQEAAwADAQEAAAAAAAAAAAAABQYHAgMEAQj/xAA9EQABAQUFBgUCBAUDBQAAAAABAgADBBEhBQYSMUETUWFxgZEiobHB0QcyQlLh8BQjYnKyFRYkM4KSwvH/2gAMAwEAAhEDEQA/AO/qUpRjKUpRjKUpRjKUpRjKUpRjKEgepr5PyWIzKnpDqGm0DalrPSlI+ZJ9KpnkDmmKzHetGIPB+QoFC7gB5Gvn4e/vK+voPrUdaVqw1nOi9iFS3DU8g0daVqw1nOtrEKluGp5D9je11Agjsd1+1znx/wAyybHHbtGTB6ZCT2alJ87rQ+St/fH9R9avOyZVj+Qxg9ZrtGmfNLavOn8UnuP0rz2Vb0JaSAXSpK1Scx88w3msm3oS0kAulSVqk5j55htzSvwEEV+1MtNMpSlGMpSlGMpSlGMpSlGMpSlGMpSlGMpSlGMpShIA2aMZQkAbNR3Ic4xjFylF5uzDDqhsMgFbhHz6UgnX1NRDKuWbOrjyZcsUuTD85K0MpQ4kpW11nXWUK0SB317b1UdFWtCQwWHjxYkgkiYnSurWlbRsVa8JChe0eDEkEkTE6Vyzaa37Lsexljxb1dI8XY2ltStrX/ACoHc1VGQ8/p87OM2cq9hJnHQ/ENp7/qapKXLlT5rkeybIdkSHDtbrqipSj9Sa+Ptv2rMLSvxGRBKYYbNPc98uw6tmVo34jYglMMA7T3Pc07Dq28v+YZJk7m71dnpDe9hgeRpP4IHatHWZBtVzua+m222zMPp/wOBvz/AP/Z">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -865,7 +863,7 @@
             html += `
               <tr${rowStyle}>
                 <td><strong>${data.tanggal || '-'}</strong><br><small style="color:#5c675f;">${data.jamMulai || ''} - ${data.jamSelesai || ''}</small></td>
-                <td>${data.keperluan || 'Kegiatan AVR'}<br><small style="color: #666;">Peminjam: ${data.peminjam || 'Umum'}</small></td>
+                <td>${escapeHtml(data.keperluan) || 'Kegiatan AVR'}<br><small style="color: #666;">Peminjam: ${escapeHtml(data.peminjam) || 'Umum'}</small></td>
                 <td>${statusBadge}</td>
               </tr>
             `;
@@ -908,9 +906,9 @@
             pendingRequestsCache[docId] = data;
             html += `
               <tr style="cursor:pointer;" onclick="openPendingDetailModal('${docId}')">
-                <td><strong>${data.peminjam || 'Tidak diketahui'}</strong>${data.pengajuRole ? `<br><span style="color:#5c675f; font-size:12px;">${data.pengajuRole}</span>` : ''}</td>
-                <td><strong>${data.tanggal || '-'}</strong><br><span style="color:#5c675f; font-size:12px;">${data.jamMulai || ''} - ${data.jamSelesai || ''}</span></td>
-                <td>${data.keperluan || '-'}</td>
+                <td><strong>${escapeHtml(data.peminjam) || 'Tidak diketahui'}</strong>${data.pengajuRole ? `<br><span style="color:#5c675f; font-size:12px;">${escapeHtml(data.pengajuRole)}</span>` : ''}</td>
+                <td><strong>${escapeHtml(data.tanggal) || '-'}</strong><br><span style="color:#5c675f; font-size:12px;">${escapeHtml(data.jamMulai) || ''} - ${escapeHtml(data.jamSelesai) || ''}</span></td>
+                <td>${escapeHtml(data.keperluan) || '-'}</td>
                 <td>
                   <div class="action-btns">
                     <button class="btn-sm btn-approve" onclick="event.stopPropagation(); updateStatus('${docId}', 'approved')">Setujui</button>
@@ -996,13 +994,13 @@
             const docId = docSnap.id;
             html += `
               <tr>
-                <td><strong>${data.peminjam || 'Tidak diketahui'}</strong>${data.pengajuRole ? `<br><span style="color:#5c675f; font-size:12px;">${data.pengajuRole}</span>` : ''}</td>
-                <td><strong>${data.tanggal || '-'}</strong><br><span style="color:#5c675f; font-size:12px;">${data.jamMulai || ''} - ${data.jamSelesai || ''}</span></td>
-                <td>${data.keperluan || '-'}</td>
+                <td><strong>${escapeHtml(data.peminjam) || 'Tidak diketahui'}</strong>${data.pengajuRole ? `<br><span style="color:#5c675f; font-size:12px;">${escapeHtml(data.pengajuRole)}</span>` : ''}</td>
+                <td><strong>${escapeHtml(data.tanggal) || '-'}</strong><br><span style="color:#5c675f; font-size:12px;">${escapeHtml(data.jamMulai) || ''} - ${escapeHtml(data.jamSelesai) || ''}</span></td>
+                <td>${escapeHtml(data.keperluan) || '-'}</td>
                 <td>
                   <div class="action-btns">
                     <button class="btn-sm" style="background: var(--chalk-gold-dim); color:#fff;"
-                      onclick='openEditEventModal("${docId}", ${JSON.stringify(data)})'>Pindahkan</button>
+                      onclick='openEditEventModal("${docId}", ${escapeHtml(JSON.stringify(data))})'>Pindahkan</button>
                     <button class="btn-sm btn-reject" onclick="cancelApprovedSchedule('${docId}')">Batalkan</button>
                   </div>
                 </td>
@@ -1054,6 +1052,20 @@
         const [y, m, d] = dateStr.split('-').map(Number);
         const dateObj = new Date(y, m - 1, d);
         return `${dayNamesFull[dateObj.getDay()]}, ${d} ${monthNames[m - 1]} ${y}`;
+      }
+
+      // ================== HELPER: CEGAH XSS ==================
+      // Semua field teks bebas (keperluan, peminjam, penyelenggara, dll) yang
+      // diisi pengguna WAJIB lewat fungsi ini dulu sebelum dimasukkan ke
+      // innerHTML, supaya tidak bisa disusupi tag/script berbahaya.
+      function escapeHtml(value){
+        if(value === null || value === undefined) return '';
+        return value.toString()
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
       }
 
       // ================== HELPER: STATUS WAKTU EVENT (SELESAI / SEDANG BERLANGSUNG) ==================
@@ -1243,10 +1255,10 @@
           }
           return `
             <div class="rundown-item">
-              <div class="rundown-time">${item.time}</div>
+              <div class="rundown-time">${escapeHtml(item.time)}</div>
               <div class="rundown-info">
-                ${ongoingBadge}<h4>${item.title}</h4>
-                <p>${item.note || ''}</p>
+                ${ongoingBadge}<h4>${escapeHtml(item.title)}</h4>
+                <p>${escapeHtml(item.note) || ''}</p>
               </div>
             </div>
           `;

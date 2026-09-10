@@ -384,6 +384,156 @@
   .rundown-info h4 { font-size: 13.5px; font-weight: 600; color: var(--ink); }
   .rundown-info p { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
   .rundown-empty { margin-top: 18px; font-size: 13px; color: var(--ink-soft); text-align: center; padding: 20px 0; }
+
+  /* --- SUB TABS (Umum / Reservasi Saya, gaya folder tab seperti di login) --- */
+  .subtabs {
+    display: flex;
+    gap: 4px;
+    padding-left: 2px;
+    margin-bottom: 0;
+    position: relative;
+    z-index: 2;
+  }
+  .subtab {
+    appearance: none;
+    border: none;
+    background: rgba(31,59,50,0.05);
+    color: var(--ink-soft);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 10px 18px 11px;
+    cursor: pointer;
+    border-radius: 8px 8px 0 0;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+  .subtab:hover { color: var(--ink); background: rgba(31,59,50,0.09); }
+  .subtab.active { background: #fff; color: var(--ink); box-shadow: 0 -2px 0 var(--chalk-gold-dim) inset; }
+  .subtab-panels { border-top: 1px solid var(--paper-line); padding-top: 16px; margin-top: -1px; }
+  .subtab-panel { display: none; }
+  .subtab-panel.active { display: block; animation: fadeIn 0.25s ease forwards; }
+  .my-row { cursor: pointer; }
+  .my-row:hover { background: rgba(31,59,50,0.035); }
+
+  /* --- CUSTOM DATE PICKER --- */
+  .dt-field, .tp-field {
+    position: relative;
+  }
+  .dt-display, .tp-display {
+    width: 100%; padding: 10px 40px 10px 12px;
+    border: 1.5px solid rgba(31,59,50,0.16); border-radius: 8px;
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 14px;
+    background: #fff; cursor: pointer; color: var(--ink);
+  }
+  .dt-display::placeholder, .tp-display::placeholder { color: #9aa39d; }
+  .dt-display:focus, .tp-display:focus { outline: none; border-color: var(--chalk-gold-dim); }
+  .dt-icon, .tp-icon {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    width: 17px; height: 17px; color: var(--ink-soft); pointer-events: none;
+  }
+  .dt-icon svg, .tp-icon svg { width: 100%; height: 100%; }
+
+  .dt-panel {
+    display: none;
+    position: absolute; top: calc(100% + 8px); left: 0;
+    width: 290px; max-width: 90vw;
+    background: var(--paper);
+    border: 1px solid var(--paper-line);
+    border-radius: var(--radius);
+    box-shadow: 0 24px 48px -20px rgba(31,59,50,0.35);
+    padding: 16px;
+    z-index: 40;
+    animation: modalIn 0.18s ease;
+  }
+  .dt-field.open .dt-panel { display: block; }
+  .dt-panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .dt-panel-head .dt-month-label {
+    font-family: 'Fraunces', serif; font-weight: 600; font-size: 15px;
+  }
+  .dt-nav {
+    width: 26px; height: 26px; border-radius: 7px;
+    border: 1.5px solid rgba(31,59,50,0.16); background: #fff;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: var(--ink); font-size: 15px; line-height: 1;
+  }
+  .dt-nav:hover { background: rgba(31,59,50,0.06); }
+  .dt-weekdays {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600;
+    color: var(--ink-soft); text-align: center; margin-bottom: 6px; letter-spacing: 0.03em;
+  }
+  .dt-days {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px;
+  }
+  .dt-day {
+    aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center;
+    font-family: 'IBM Plex Mono', monospace; font-size: 12.5px;
+    border-radius: 7px; cursor: pointer; color: var(--ink);
+    transition: background 0.15s ease;
+  }
+  .dt-day:hover:not(.dt-disabled):not(.dt-empty) { background: rgba(232,185,78,0.25); }
+  .dt-day.dt-empty { visibility: hidden; cursor: default; }
+  .dt-day.dt-disabled { color: #c7cdc9; cursor: not-allowed; }
+  .dt-day.dt-today { border: 1.5px solid var(--chalk-gold-dim); font-weight: 700; }
+  .dt-day.dt-selected { background: var(--ink); color: #fff; font-weight: 700; }
+  .dt-footer {
+    display: flex; justify-content: space-between; margin-top: 12px;
+    padding-top: 10px; border-top: 1px dashed var(--paper-line);
+  }
+  .dt-footer button {
+    background: none; border: none; cursor: pointer;
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 12.5px; font-weight: 600;
+    color: var(--chalk-gold-dim);
+  }
+  .dt-footer button:hover { text-decoration: underline; }
+
+  /* --- CUSTOM TIME PICKER --- */
+  .tp-panel {
+    display: none;
+    position: absolute; top: calc(100% + 8px); left: 0;
+    width: 190px;
+    background: var(--paper);
+    border: 1px solid var(--paper-line);
+    border-radius: var(--radius);
+    box-shadow: 0 24px 48px -20px rgba(31,59,50,0.35);
+    padding: 12px;
+    z-index: 40;
+    animation: modalIn 0.18s ease;
+  }
+  .tp-field.open .tp-panel { display: block; }
+  .tp-cols { display: flex; gap: 8px; }
+  .tp-col-wrap { flex: 1; }
+  .tp-col-label {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600;
+    color: var(--ink-soft); text-align: center; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .tp-col {
+    height: 168px; overflow-y: auto;
+    border: 1px solid var(--paper-line); border-radius: 8px;
+    display: flex; flex-direction: column;
+  }
+  .tp-option {
+    padding: 7px 0; text-align: center; cursor: pointer;
+    font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--ink);
+  }
+  .tp-option:hover { background: rgba(232,185,78,0.2); }
+  .tp-option.tp-selected { background: var(--ink); color: #fff; font-weight: 700; }
+  .tp-confirm {
+    width: 100%; margin-top: 10px; padding: 8px; border: none; border-radius: 7px;
+    background: var(--ink); color: #fff; font-weight: 600; font-size: 12.5px; cursor: pointer;
+  }
+  .tp-confirm:hover { background: #32463e; }
+
+  /* --- INFO CALLOUT (dipakai di modal detail reservasi saya) --- */
+  .info-callout {
+    margin-top: 4px; padding: 12px 14px; border-radius: 10px; font-size: 13px; line-height: 1.5;
+  }
+  .info-callout.approved { background: rgba(58,139,92,0.1); color: #285e3f; }
+  .info-callout.rejected { background: rgba(193,84,58,0.1); color: #8a3a27; }
+  .info-callout strong { display: block; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 3px; opacity: 0.75; }
 </style>
 </head>
 <body>
@@ -426,22 +576,69 @@
           <h2>Formulir Peminjaman</h2>
           <form id="reservationForm">
             <div class="form-group">
-              <label>Atas Nama Kegiatan / Organisasi (opsional)</label>
+              <label>Atas Nama Kegiatan / Organisasi / Kelompok (opsional)</label>
               <input type="text" id="penyelenggaraInput" placeholder="Contoh: OSIS, Pramuka, Panitia Class Meeting">
               <p id="identitasHint" style="font-size:12px; color: var(--ink-soft); margin-top:4px;">Identitas pengaju tercatat otomatis dari akun kamu yang sedang login. Isi kolom ini hanya kalau reservasi diajukan atas nama sebuah kegiatan/organisasi.</p>
             </div>
             <div class="form-group">
+              <label>Penanggung Jawab Kegiatan</label>
+              <input type="text" id="penanggungJawabInput" placeholder="Nama lengkap penanggung jawab kegiatan" required>
+            </div>
+            <div class="form-group">
               <label>Tanggal Pemakaian</label>
-              <input type="date" id="tanggalInput" required>
+              <div class="dt-field" id="tanggalField">
+                <input type="text" id="tanggalInput" class="dt-display" placeholder="Pilih tanggal" readonly required>
+                <input type="hidden" id="tanggalInputRaw">
+                <span class="dt-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+                </span>
+                <div class="dt-panel" id="tanggalPanel">
+                  <div class="dt-panel-head">
+                    <button type="button" class="dt-nav" data-nav="-1">‹</button>
+                    <span class="dt-month-label" id="tanggalPanelLabel">—</span>
+                    <button type="button" class="dt-nav" data-nav="1">›</button>
+                  </div>
+                  <div class="dt-weekdays"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
+                  <div class="dt-days" id="tanggalPanelDays"></div>
+                  <div class="dt-footer">
+                    <button type="button" id="tanggalClear">Clear</button>
+                    <button type="button" id="tanggalToday">Hari ini</button>
+                  </div>
+                </div>
+              </div>
             </div>
             <div style="display:flex; gap:16px;">
               <div class="form-group" style="flex:1;">
                 <label>Jam Mulai</label>
-                <input type="time" id="jamMulaiInput" required>
+                <div class="tp-field" id="jamMulaiField">
+                  <input type="text" id="jamMulaiInput" class="tp-display" placeholder="--:--" readonly required>
+                  <span class="tp-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+                  </span>
+                  <div class="tp-panel" id="jamMulaiPanel">
+                    <div class="tp-cols">
+                      <div class="tp-col-wrap"><div class="tp-col-label">Jam</div><div class="tp-col" data-role="hour"></div></div>
+                      <div class="tp-col-wrap"><div class="tp-col-label">Menit</div><div class="tp-col" data-role="minute"></div></div>
+                    </div>
+                    <button type="button" class="tp-confirm">Pilih</button>
+                  </div>
+                </div>
               </div>
               <div class="form-group" style="flex:1;">
                 <label>Jam Selesai</label>
-                <input type="time" id="jamSelesaiInput" required>
+                <div class="tp-field" id="jamSelesaiField">
+                  <input type="text" id="jamSelesaiInput" class="tp-display" placeholder="--:--" readonly required>
+                  <span class="tp-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+                  </span>
+                  <div class="tp-panel" id="jamSelesaiPanel">
+                    <div class="tp-cols">
+                      <div class="tp-col-wrap"><div class="tp-col-label">Jam</div><div class="tp-col" data-role="hour"></div></div>
+                      <div class="tp-col-wrap"><div class="tp-col-label">Menit</div><div class="tp-col" data-role="minute"></div></div>
+                    </div>
+                    <button type="button" class="tp-confirm">Pilih</button>
+                  </div>
+                </div>
               </div>
             </div>
             <div class="form-group">
@@ -452,21 +649,46 @@
           </form>
         </div>
         <div class="card">
-          <h2>Jadwal Mendatang Terkonfirmasi</h2>
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Waktu</th>
-                <th>Kegiatan</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="approvedSchedulesContainer">
-              <tr>
-                <td colspan="3" style="text-align: center; color: var(--ink-soft);">Memuat jadwal terkonfirmasi...</td>
-              </tr>
-            </tbody>
-          </table>
+          <h2 style="margin-bottom:0; border-bottom:none; padding-bottom:0;">Jadwal Mendatang</h2>
+          <div class="subtabs" style="margin-top:14px;">
+            <button type="button" class="subtab active" id="subtabUmum">Umum</button>
+            <button type="button" class="subtab" id="subtabMilikSaya">Reservasi Saya</button>
+          </div>
+          <div class="subtab-panels">
+            <div class="subtab-panel active" id="panelUmum">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Waktu</th>
+                    <th>Kegiatan</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="approvedSchedulesContainer">
+                  <tr>
+                    <td colspan="3" style="text-align: center; color: var(--ink-soft);">Memuat jadwal terkonfirmasi...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="subtab-panel" id="panelMilikSaya">
+              <p style="font-size:12px; color: var(--ink-soft); margin:-4px 0 12px;">Semua reservasi yang kamu ajukan (semua status). Klik salah satu baris untuk melihat detail lengkap.</p>
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Waktu</th>
+                    <th>Kegiatan</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="myReservationsContainer">
+                  <tr>
+                    <td colspan="3" style="text-align: center; color: var(--ink-soft);">Memuat reservasi kamu...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -646,9 +868,89 @@
         </div>
       </div>
 
+      <div style="margin-top: 14px;">
+        <label style="display:block; font-size:12px; font-weight:600; color: var(--ink-soft); margin-bottom:2px;">Penanggung Jawab Kegiatan</label>
+        <p id="detailPenanggungJawab" style="font-size:14px;">-</p>
+      </div>
+
       <div style="display:flex; gap:12px; margin-top: 24px;">
         <button id="detailBtnApprove" class="btn-sm btn-approve" style="flex:1; padding:11px; font-size:13.5px;" type="button">Setujui</button>
         <button id="detailBtnReject" class="btn-sm btn-reject" style="flex:1; padding:11px; font-size:13.5px;" type="button">Tolak</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ALASAN PENOLAKAN (admin wajib isi alasan sebelum menolak permohonan) -->
+  <div class="modal-overlay" id="rejectReasonModal">
+    <div class="modal-box">
+      <button class="modal-close" id="rejectReasonClose" aria-label="Tutup" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+      <span class="modal-eyebrow">Tolak Permohonan</span>
+      <h3>Alasan Penolakan</h3>
+      <div class="form-group" style="margin-top: 16px;">
+        <label>Jelaskan alasan menolak permohonan ini (akan ditampilkan ke pengaju)</label>
+        <textarea id="rejectReasonInput" rows="4" placeholder="Contoh: Ruangan AVR sudah dipakai kegiatan lain pada jam tersebut."></textarea>
+      </div>
+      <div style="display:flex; gap:12px; margin-top: 8px;">
+        <button id="rejectReasonCancel" class="btn-sm" style="flex:1; padding:11px; font-size:13.5px; background: rgba(31,59,50,0.08); color: var(--ink);" type="button">Batal</button>
+        <button id="rejectReasonConfirm" class="btn-sm btn-reject" style="flex:1; padding:11px; font-size:13.5px;" type="button">Tolak Permohonan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DETAIL: REZERVASI SAYA (siswa/guru lihat detail lengkap reservasi milik sendiri, status apapun) -->
+  <div class="modal-overlay" id="myReservationDetailModal">
+    <div class="modal-box">
+      <button class="modal-close" id="myReservationDetailClose" aria-label="Tutup" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+      <span class="modal-eyebrow">Reservasi Saya</span>
+      <h3>Detail Reservasi</h3>
+      <span class="modal-status-chip" id="myResStatusChip"><span class="dot"></span><span id="myResStatusText">—</span></span>
+
+      <div style="margin-top: 18px; display:flex; flex-direction:column; gap: 14px;">
+        <div>
+          <label style="display:block; font-size:12px; font-weight:600; color: var(--ink-soft); margin-bottom:2px;">Nama Pengaju (akun login)</label>
+          <p id="myResPeminjam" style="font-size:15px; font-weight:600;">-</p>
+        </div>
+        <div style="display:flex; gap:24px;">
+          <div>
+            <label style="display:block; font-size:12px; font-weight:600; color: var(--ink-soft); margin-bottom:2px;">Peran</label>
+            <p id="myResRole" style="font-size:14px;">-</p>
+          </div>
+          <div>
+            <label style="display:block; font-size:12px; font-weight:600; color: var(--ink-soft); margin-bottom:2px;">Atas Nama Kegiatan</label>
+            <p id="myResPenyelenggara" style="font-size:14px;">-</p>
+          </div>
+        </div>
+        <div>
+          <label style="display:block; font-size:12px; font-weight:600; color: var(--ink-soft); margin-bottom:2px;">Penanggung Jawab Kegiatan</label>
+          <p id="myResPenanggungJawab" style="font-size:14px;">-</p>
+        </div>
+        <div style="display:flex; gap:24px;">
+          <div>
+            <label style="display:block; font-size:12px; font-weight:600; color: var(--ink-soft); margin-bottom:2px;">Tanggal</label>
+            <p id="myResTanggal" style="font-size:14px;">-</p>
+          </div>
+          <div>
+            <label style="display:block; font-size:12px; font-weight:600; color: var(--ink-soft); margin-bottom:2px;">Jam</label>
+            <p id="myResJam" style="font-size:14px;">-</p>
+          </div>
+        </div>
+        <div>
+          <label style="display:block; font-size:12px; font-weight:600; color: var(--ink-soft); margin-bottom:2px;">Keperluan / Acara</label>
+          <p id="myResKeperluan" style="font-size:14px; line-height:1.5;">-</p>
+        </div>
+
+        <div id="myResApprovedInfo" class="info-callout approved" style="display:none;">
+          <strong>Disetujui oleh</strong>
+          <span id="myResApprovedBy">-</span>
+        </div>
+        <div id="myResRejectedInfo" class="info-callout rejected" style="display:none;">
+          <strong>Alasan ditolak</strong>
+          <span id="myResRejectedReason">-</span>
+        </div>
       </div>
     </div>
   </div>
@@ -794,10 +1096,16 @@
           e.preventDefault();
           
           const penyelenggara = document.getElementById('penyelenggaraInput').value.trim();
-          const tanggal = document.getElementById('tanggalInput').value;
+          const penanggungJawab = document.getElementById('penanggungJawabInput').value.trim();
+          const tanggal = document.getElementById('tanggalInputRaw').value;
           const jamMulai = document.getElementById('jamMulaiInput').value;
           const jamSelesai = document.getElementById('jamSelesaiInput').value;
           const keperluan = document.getElementById('keperluanInput').value;
+
+          if(!penanggungJawab){
+            alert('Penanggung jawab kegiatan wajib diisi.');
+            return;
+          }
 
           const validasi = validateEventTiming(tanggal, jamMulai, jamSelesai);
           if(!validasi.valid){
@@ -816,18 +1124,141 @@
               pengajuRole: savedRole,
               // Field opsional: nama kegiatan/organisasi yang diwakili, sekadar info tambahan (bukan identitas).
               penyelenggara: penyelenggara || '',
+              // Wajib diisi: nama penanggung jawab kegiatan.
+              penanggungJawab: penanggungJawab,
               status: 'pending',
               createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 
             alert("Permohonan reservasi berhasil dikirim ke database! Menunggu persetujuan admin.");
             reservationForm.reset();
+            document.getElementById('tanggalInputRaw').value = '';
+            loadMyReservations();
           } catch (err) {
             console.error("Gagal mengirim reservasi:", err);
             alert("Terjadi kesalahan saat mengirim data. Coba lagi.");
           }
         });
       }
+
+      // ================== SUBTABS: UMUM / RESERVASI SAYA ==================
+      const subtabUmum = document.getElementById('subtabUmum');
+      const subtabMilikSaya = document.getElementById('subtabMilikSaya');
+      const panelUmum = document.getElementById('panelUmum');
+      const panelMilikSaya = document.getElementById('panelMilikSaya');
+      if (subtabUmum && subtabMilikSaya) {
+        subtabUmum.addEventListener('click', () => {
+          subtabUmum.classList.add('active');
+          subtabMilikSaya.classList.remove('active');
+          panelUmum.classList.add('active');
+          panelMilikSaya.classList.remove('active');
+        });
+        subtabMilikSaya.addEventListener('click', () => {
+          subtabMilikSaya.classList.add('active');
+          subtabUmum.classList.remove('active');
+          panelMilikSaya.classList.add('active');
+          panelUmum.classList.remove('active');
+          loadMyReservations();
+        });
+      }
+
+      // Cache reservasi milik user yang sedang login (diisi ulang tiap loadMyReservations()).
+      let myReservationsCache = {};
+
+      // Muat SEMUA reservasi milik akun yang sedang login, status apapun (pending/approved/rejected/dibatalkan).
+      async function loadMyReservations() {
+        const container = document.getElementById('myReservationsContainer');
+        if(!container) return;
+
+        container.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--ink-soft);">Memuat reservasi kamu...</td></tr>';
+
+        try {
+          const identitas = savedName || savedRole;
+          const snapshot = await db.collection('reservasi')
+            .where('peminjam', '==', identitas)
+            .get();
+
+          if(snapshot.empty) {
+            container.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--ink-soft);">Kamu belum pernah mengajukan reservasi.</td></tr>';
+            return;
+          }
+
+          const rows = [];
+          myReservationsCache = {};
+          snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            myReservationsCache[docSnap.id] = data;
+            rows.push({ id: docSnap.id, data });
+          });
+
+          // Urutkan tanggal terbaru dulu supaya reservasi terbaru gampang ditemukan.
+          rows.sort((a, b) => (b.data.tanggal || '').localeCompare(a.data.tanggal || ''));
+
+          const statusLabel = {
+            approved: '<span class="status approved">Disetujui</span>',
+            pending: '<span class="status pending">Menunggu</span>',
+            rejected: '<span class="status ongoing" style="background: rgba(193,84,58,0.14); color: var(--danger);">Ditolak</span>',
+            dibatalkan: '<span class="status pending" style="background: rgba(31,59,50,0.08); color: var(--ink-soft);">Dibatalkan</span>'
+          };
+
+          let html = '';
+          rows.forEach(({ id, data }) => {
+            const badge = statusLabel[data.status] || `<span class="status pending">${escapeHtml(data.status || '-')}</span>`;
+            html += `
+              <tr class="my-row" onclick="openMyReservationDetailModal('${id}')">
+                <td><strong>${escapeHtml(data.tanggal) || '-'}</strong><br><small style="color:#5c675f;">${escapeHtml(data.jamMulai) || ''} - ${escapeHtml(data.jamSelesai) || ''}</small></td>
+                <td>${escapeHtml(data.keperluan) || 'Kegiatan AVR'}</td>
+                <td>${badge}</td>
+              </tr>
+            `;
+          });
+          container.innerHTML = html;
+        } catch (err) {
+          console.error("Gagal memuat reservasi saya:", err);
+          container.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--danger);">Gagal memuat data dari database.</td></tr>';
+        }
+      }
+
+      window.openMyReservationDetailModal = function(docId){
+        const data = myReservationsCache[docId];
+        if(!data) return;
+
+        const statusTextMap = { approved: 'Disetujui', pending: 'Menunggu Persetujuan', rejected: 'Ditolak', dibatalkan: 'Dibatalkan' };
+        const chipClassMap = { approved: 'approved', pending: 'pending', rejected: 'ongoing', dibatalkan: 'empty' };
+
+        document.getElementById('myResPeminjam').textContent = data.peminjam || 'Tidak diketahui';
+        document.getElementById('myResRole').textContent = data.pengajuRole || '-';
+        document.getElementById('myResPenyelenggara').textContent = data.penyelenggara ? data.penyelenggara : '(tidak diisi)';
+        document.getElementById('myResPenanggungJawab').textContent = data.penanggungJawab || '-';
+        document.getElementById('myResTanggal').textContent = data.tanggal ? formatReadableDate(data.tanggal) : '-';
+        document.getElementById('myResJam').textContent = `${data.jamMulai || '-'} - ${data.jamSelesai || '-'}`;
+        document.getElementById('myResKeperluan').textContent = data.keperluan || '-';
+
+        const chip = document.getElementById('myResStatusChip');
+        chip.className = 'modal-status-chip ' + (chipClassMap[data.status] || 'empty');
+        document.getElementById('myResStatusText').textContent = statusTextMap[data.status] || (data.status || '-');
+
+        const approvedInfo = document.getElementById('myResApprovedInfo');
+        const rejectedInfo = document.getElementById('myResRejectedInfo');
+        approvedInfo.style.display = 'none';
+        rejectedInfo.style.display = 'none';
+
+        if (data.status === 'approved') {
+          approvedInfo.style.display = 'block';
+          document.getElementById('myResApprovedBy').textContent = data.disetujuiOleh || 'Admin';
+        } else if (data.status === 'rejected') {
+          rejectedInfo.style.display = 'block';
+          document.getElementById('myResRejectedReason').textContent = data.alasanDitolak || 'Tidak ada alasan yang dicantumkan.';
+        }
+
+        document.getElementById('myReservationDetailModal').classList.add('show');
+      };
+      document.getElementById('myReservationDetailClose').addEventListener('click', () => {
+        document.getElementById('myReservationDetailModal').classList.remove('show');
+      });
+      document.getElementById('myReservationDetailModal').addEventListener('click', (e) => {
+        if(e.target.id === 'myReservationDetailModal') document.getElementById('myReservationDetailModal').classList.remove('show');
+      });
 
       // 4. Load Data Jadwal Terkonfirmasi untuk Siswa
       async function loadApprovedSchedules() {
@@ -906,13 +1337,13 @@
             pendingRequestsCache[docId] = data;
             html += `
               <tr style="cursor:pointer;" onclick="openPendingDetailModal('${docId}')">
-                <td><strong>${escapeHtml(data.peminjam) || 'Tidak diketahui'}</strong>${data.pengajuRole ? `<br><span style="color:#5c675f; font-size:12px;">${escapeHtml(data.pengajuRole)}</span>` : ''}</td>
+                <td><strong>${escapeHtml(data.peminjam) || 'Tidak diketahui'}</strong>${data.pengajuRole ? `<br><span style="color:#5c675f; font-size:12px;">${escapeHtml(data.pengajuRole)}</span>` : ''}${data.penanggungJawab ? `<br><span style="color:#5c675f; font-size:12px;">PJ: ${escapeHtml(data.penanggungJawab)}</span>` : ''}</td>
                 <td><strong>${escapeHtml(data.tanggal) || '-'}</strong><br><span style="color:#5c675f; font-size:12px;">${escapeHtml(data.jamMulai) || ''} - ${escapeHtml(data.jamSelesai) || ''}</span></td>
                 <td>${escapeHtml(data.keperluan) || '-'}</td>
                 <td>
                   <div class="action-btns">
                     <button class="btn-sm btn-approve" onclick="event.stopPropagation(); updateStatus('${docId}', 'approved')">Setujui</button>
-                    <button class="btn-sm btn-reject" onclick="event.stopPropagation(); updateStatus('${docId}', 'rejected')">Tolak</button>
+                    <button class="btn-sm btn-reject" onclick="event.stopPropagation(); openRejectReasonModal('${docId}')">Tolak</button>
                   </div>
                 </td>
               </tr>
@@ -926,9 +1357,18 @@
       }
 
       // Fungsi Global Aksi Admin (Setujui / Tolak)
-      window.updateStatus = async function(docId, newStatus) {
+      // extra.alasan dipakai saat menolak (wajib lewat modal alasan penolakan).
+      // Saat menyetujui, otomatis dicatat nama admin (akun yang sedang login) yang menyetujui.
+      window.updateStatus = async function(docId, newStatus, extra) {
         try {
-          await db.collection('reservasi').doc(docId).update({ status: newStatus });
+          const payload = { status: newStatus };
+          if (newStatus === 'approved') {
+            payload.disetujuiOleh = savedName || savedRole;
+          }
+          if (newStatus === 'rejected') {
+            payload.alasanDitolak = (extra && extra.alasan) ? extra.alasan : '';
+          }
+          await db.collection('reservasi').doc(docId).update(payload);
           alert(`Reservasi berhasil ${newStatus === 'approved' ? 'disetujui' : 'ditolak'}!`);
           closePendingDetailModal();
           loadAdminRequests(); // Refresh tabel admin
@@ -937,6 +1377,36 @@
           alert("Gagal memproses aksi.");
         }
       };
+
+      // ================== FITUR ADMIN: ALASAN PENOLAKAN ==================
+      // docId permohonan yang sedang diproses lewat modal alasan penolakan.
+      let rejectingDocId = null;
+
+      window.openRejectReasonModal = function(docId){
+        rejectingDocId = docId;
+        document.getElementById('rejectReasonInput').value = '';
+        document.getElementById('rejectReasonModal').classList.add('show');
+      };
+      function closeRejectReasonModal(){
+        document.getElementById('rejectReasonModal').classList.remove('show');
+        rejectingDocId = null;
+      }
+      document.getElementById('rejectReasonClose').addEventListener('click', closeRejectReasonModal);
+      document.getElementById('rejectReasonCancel').addEventListener('click', closeRejectReasonModal);
+      document.getElementById('rejectReasonModal').addEventListener('click', (e) => {
+        if(e.target.id === 'rejectReasonModal') closeRejectReasonModal();
+      });
+      document.getElementById('rejectReasonConfirm').addEventListener('click', () => {
+        if(!rejectingDocId) return;
+        const alasan = document.getElementById('rejectReasonInput').value.trim();
+        if(!alasan){
+          alert('Alasan penolakan wajib diisi supaya pengaju tahu kenapa permohonannya ditolak.');
+          return;
+        }
+        const docId = rejectingDocId;
+        closeRejectReasonModal();
+        updateStatus(docId, 'rejected', { alasan });
+      });
 
       // ================== FITUR ADMIN: DETAIL PERMOHONAN PENDING ==================
       // Cache data pending (diisi ulang tiap loadAdminRequests()) supaya klik baris
@@ -950,6 +1420,7 @@
         document.getElementById('detailPeminjam').textContent = data.peminjam || 'Tidak diketahui';
         document.getElementById('detailRole').textContent = data.pengajuRole || '-';
         document.getElementById('detailPenyelenggara').textContent = data.penyelenggara ? data.penyelenggara : '(tidak diisi)';
+        document.getElementById('detailPenanggungJawab').textContent = data.penanggungJawab || '-';
         document.getElementById('detailTanggal').textContent = data.tanggal ? formatReadableDate(data.tanggal) : '-';
         document.getElementById('detailJam').textContent = `${data.jamMulai || '-'} - ${data.jamSelesai || '-'}`;
         document.getElementById('detailKeperluan').textContent = data.keperluan || '-';
@@ -957,7 +1428,7 @@
         const btnSetujui = document.getElementById('detailBtnApprove');
         const btnTolak = document.getElementById('detailBtnReject');
         btnSetujui.onclick = () => updateStatus(docId, 'approved');
-        btnTolak.onclick = () => updateStatus(docId, 'rejected');
+        btnTolak.onclick = () => { closePendingDetailModal(); openRejectReasonModal(docId); };
 
         document.getElementById('pendingDetailModal').classList.add('show');
       };
@@ -1104,14 +1575,164 @@
         return { valid: true, message: '' };
       }
 
-      // Batasi date-picker browser agar tidak bisa pilih tanggal sebelum hari ini (lapisan UX tambahan).
+      // Batasi date-picker browser (form Admin, masih pakai <input type="date"> bawaan) agar tidak bisa pilih tanggal sebelum hari ini.
       (function restrictPastDates(){
         const todayStr = formatDateKey(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
-        const tanggalInputEl = document.getElementById('tanggalInput');
         const eventTanggalEl = document.getElementById('eventTanggal');
-        if(tanggalInputEl) tanggalInputEl.min = todayStr;
         if(eventTanggalEl) eventTanggalEl.min = todayStr;
       })();
+
+      // ================== KOMPONEN: CUSTOM DATE PICKER (form reservasi Siswa/Guru) ==================
+      // Tampilan kalender custom bergaya sekolah (bukan date-picker bawaan browser), tanggal lampau otomatis dikunci.
+      function setupDatePicker(opts){
+        const field = document.getElementById(opts.fieldId);
+        const display = document.getElementById(opts.displayId);
+        const raw = document.getElementById(opts.rawId);
+        const panel = document.getElementById(opts.panelId);
+        if(!field || !display || !raw || !panel) return;
+
+        const label = panel.querySelector('.dt-month-label');
+        const daysGrid = panel.querySelector('.dt-days');
+        const btnPrev = panel.querySelector('[data-nav="-1"]');
+        const btnNext = panel.querySelector('[data-nav="1"]');
+        const btnClear = document.getElementById(opts.clearId);
+        const btnToday = document.getElementById(opts.todayId);
+
+        const todayObj = new Date();
+        const todayStr = formatDateKey(todayObj.getFullYear(), todayObj.getMonth(), todayObj.getDate());
+        let viewYear = todayObj.getFullYear();
+        let viewMonth = todayObj.getMonth();
+
+        function renderPanel(){
+          label.textContent = `${monthNames[viewMonth]} ${viewYear}`;
+          const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+          const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+          let html = '';
+          for(let i = 0; i < firstDay; i++){ html += '<span class="dt-day dt-empty"></span>'; }
+          for(let d = 1; d <= daysInMonth; d++){
+            const dateStr = formatDateKey(viewYear, viewMonth, d);
+            const disabled = dateStr < todayStr;
+            const classes = ['dt-day'];
+            if(disabled) classes.push('dt-disabled');
+            if(dateStr === todayStr) classes.push('dt-today');
+            if(dateStr === raw.value) classes.push('dt-selected');
+            html += `<span class="${classes.join(' ')}" data-date="${dateStr}">${d}</span>`;
+          }
+          daysGrid.innerHTML = html;
+          daysGrid.querySelectorAll('.dt-day:not(.dt-disabled):not(.dt-empty)').forEach(cell => {
+            cell.addEventListener('click', () => selectDate(cell.dataset.date));
+          });
+        }
+
+        function selectDate(dateStr){
+          raw.value = dateStr;
+          display.value = formatReadableDate(dateStr);
+          closePanel();
+        }
+
+        function openPanel(){
+          const base = raw.value ? new Date(raw.value + 'T00:00:00') : todayObj;
+          viewYear = base.getFullYear();
+          viewMonth = base.getMonth();
+          renderPanel();
+          field.classList.add('open');
+          setTimeout(() => document.addEventListener('click', outsideClickHandler), 0);
+        }
+        function closePanel(){
+          field.classList.remove('open');
+          document.removeEventListener('click', outsideClickHandler);
+        }
+        function outsideClickHandler(e){
+          if(!field.contains(e.target)) closePanel();
+        }
+
+        display.addEventListener('click', () => {
+          if(field.classList.contains('open')) closePanel(); else openPanel();
+        });
+        btnPrev.addEventListener('click', () => { viewMonth--; if(viewMonth < 0){ viewMonth = 11; viewYear--; } renderPanel(); });
+        btnNext.addEventListener('click', () => { viewMonth++; if(viewMonth > 11){ viewMonth = 0; viewYear++; } renderPanel(); });
+        if(btnClear) btnClear.addEventListener('click', () => { raw.value = ''; display.value = ''; closePanel(); });
+        if(btnToday) btnToday.addEventListener('click', () => selectDate(todayStr));
+      }
+
+      // ================== KOMPONEN: CUSTOM TIME PICKER (form reservasi Siswa/Guru) ==================
+      // Dua kolom scroll (Jam & Menit) supaya lebih rapi & konsisten tampilannya di semua perangkat,
+      // dibanding input jam bawaan browser yang tampilannya beda-beda tiap OS.
+      function setupTimePicker(opts){
+        const field = document.getElementById(opts.fieldId);
+        const display = document.getElementById(opts.displayId);
+        const panel = document.getElementById(opts.panelId);
+        if(!field || !display || !panel) return;
+
+        const hourCol = panel.querySelector('[data-role="hour"]');
+        const minuteCol = panel.querySelector('[data-role="minute"]');
+        const btnConfirm = panel.querySelector('.tp-confirm');
+
+        const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+        const minutes = ['00','05','10','15','20','25','30','35','40','45','50','55'];
+
+        let selHour = null, selMinute = null;
+
+        function buildOptions(col, values, onPick){
+          col.innerHTML = values.map(v => `<div class="tp-option" data-val="${v}">${v}</div>`).join('');
+          col.querySelectorAll('.tp-option').forEach(opt => {
+            opt.addEventListener('click', () => onPick(opt.dataset.val, opt, col));
+          });
+        }
+
+        buildOptions(hourCol, hours, (val, el, col) => {
+          selHour = val;
+          col.querySelectorAll('.tp-option').forEach(o => o.classList.remove('tp-selected'));
+          el.classList.add('tp-selected');
+        });
+        buildOptions(minuteCol, minutes, (val, el, col) => {
+          selMinute = val;
+          col.querySelectorAll('.tp-option').forEach(o => o.classList.remove('tp-selected'));
+          el.classList.add('tp-selected');
+        });
+
+        function markSelected(col, val){
+          col.querySelectorAll('.tp-option').forEach(o => o.classList.toggle('tp-selected', o.dataset.val === val));
+          const el = col.querySelector('.tp-selected');
+          if(el) el.scrollIntoView({ block: 'center' });
+        }
+
+        function openPanel(){
+          if(display.value && display.value.includes(':')){
+            const [h, m] = display.value.split(':');
+            selHour = h;
+            const closestM = minutes.reduce((a, b) => Math.abs(parseInt(b) - parseInt(m)) < Math.abs(parseInt(a) - parseInt(m)) ? b : a);
+            selMinute = closestM;
+            markSelected(hourCol, h);
+            markSelected(minuteCol, closestM);
+          }
+          field.classList.add('open');
+          setTimeout(() => document.addEventListener('click', outsideClickHandler), 0);
+        }
+        function closePanel(){
+          field.classList.remove('open');
+          document.removeEventListener('click', outsideClickHandler);
+        }
+        function outsideClickHandler(e){
+          if(!field.contains(e.target)) closePanel();
+        }
+
+        display.addEventListener('click', () => {
+          if(field.classList.contains('open')) closePanel(); else openPanel();
+        });
+        btnConfirm.addEventListener('click', () => {
+          if(selHour === null || selMinute === null){
+            alert('Pilih jam dan menit terlebih dahulu.');
+            return;
+          }
+          display.value = `${selHour}:${selMinute}`;
+          closePanel();
+        });
+      }
+
+      setupDatePicker({ fieldId: 'tanggalField', displayId: 'tanggalInput', rawId: 'tanggalInputRaw', panelId: 'tanggalPanel', clearId: 'tanggalClear', todayId: 'tanggalToday' });
+      setupTimePicker({ fieldId: 'jamMulaiField', displayId: 'jamMulaiInput', panelId: 'jamMulaiPanel' });
+      setupTimePicker({ fieldId: 'jamSelesaiField', displayId: 'jamSelesaiInput', panelId: 'jamSelesaiPanel' });
 
       async function fetchCalendarDataFromFirestore(year, month){
         const data = {};

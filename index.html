@@ -534,6 +534,38 @@
   .info-callout.approved { background: rgba(58,139,92,0.1); color: #285e3f; }
   .info-callout.rejected { background: rgba(193,84,58,0.1); color: #8a3a27; }
   .info-callout strong { display: block; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 3px; opacity: 0.75; }
+
+  /* --- BARANG YANG INGIN DIPINJAM: baris bubble (nama + qty), bisa ditambah berulang --- */
+  .barang-rows { display: flex; flex-direction: column; gap: 8px; }
+  .barang-row { display: flex; align-items: center; gap: 8px; }
+  .bubble-input {
+    border: 1.5px solid rgba(31,59,50,0.16);
+    border-radius: 999px;
+    padding: 9px 16px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13.5px;
+    background: #fff;
+    color: var(--ink);
+    min-width: 0;
+  }
+  .bubble-input::placeholder { color: #9aa39d; }
+  .bubble-input:focus { outline: none; border-color: var(--chalk-gold-dim); }
+  .bubble-input-nama { flex: 1 1 auto; }
+  .bubble-input-qty { flex: 0 0 78px; text-align: center; }
+  .bubble-remove {
+    flex: 0 0 28px; width: 28px; height: 28px; border-radius: 50%;
+    border: none; background: rgba(193,84,58,0.12); color: var(--danger);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 16px; line-height: 1; transition: background 0.15s ease;
+  }
+  .bubble-remove:hover { background: rgba(193,84,58,0.22); }
+
+  .barang-list-view { list-style: none; margin-top: 4px; display: flex; flex-direction: column; gap: 5px; }
+  .barang-list-view li {
+    font-size: 13px; background: rgba(31,59,50,0.04); border-radius: 8px;
+    padding: 7px 12px; display: flex; justify-content: space-between; gap: 10px;
+  }
+  .barang-list-view li span.qty { color: var(--ink-soft); font-family: 'IBM Plex Mono', monospace; }
 </style>
 </head>
 <body>
@@ -644,6 +676,11 @@
             <div class="form-group">
               <label>Keperluan / Acara</label>
               <textarea id="keperluanInput" rows="3" placeholder="Contoh: Rapat OSIS, Presentasi Kelas..." required></textarea>
+            </div>
+            <div class="form-group">
+              <label>Barang yang Ingin Dipinjam (opsional)</label>
+              <div id="barangRowsContainer" class="barang-rows"></div>
+              <p style="font-size:12px; color: var(--ink-soft); margin-top:8px;">Ketik nama barang, lalu tekan <strong>Enter</strong> di kolom nama untuk menambah baris barang berikutnya. Isi kolom Qty secara manual.</p>
             </div>
             <button type="submit" class="btn-submit">Ajukan Reservasi</button>
           </form>
@@ -873,6 +910,11 @@
         <p id="detailPenanggungJawab" style="font-size:14px;">-</p>
       </div>
 
+      <div id="detailBarangWrap" style="margin-top: 14px; display:none;">
+        <label style="display:block; font-size:12px; font-weight:600; color: var(--ink-soft); margin-bottom:4px;">Barang yang Ingin Dipinjam</label>
+        <div id="detailBarangList"></div>
+      </div>
+
       <div style="display:flex; gap:12px; margin-top: 24px;">
         <button id="detailBtnApprove" class="btn-sm btn-approve" style="flex:1; padding:11px; font-size:13.5px;" type="button">Setujui</button>
         <button id="detailBtnReject" class="btn-sm btn-reject" style="flex:1; padding:11px; font-size:13.5px;" type="button">Tolak</button>
@@ -941,6 +983,11 @@
         <div>
           <label style="display:block; font-size:12px; font-weight:600; color: var(--ink-soft); margin-bottom:2px;">Keperluan / Acara</label>
           <p id="myResKeperluan" style="font-size:14px; line-height:1.5;">-</p>
+        </div>
+
+        <div id="myResBarangWrap" style="display:none;">
+          <label style="display:block; font-size:12px; font-weight:600; color: var(--ink-soft); margin-bottom:4px;">Barang yang Ingin Dipinjam</label>
+          <div id="myResBarangList"></div>
         </div>
 
         <div id="myResApprovedInfo" class="info-callout approved" style="display:none;">
@@ -1092,6 +1139,9 @@
           identitasHint.textContent = `Identitas pengaju tercatat otomatis sebagai "${identitasAkun}" dari akun kamu yang sedang login. Isi kolom di atas hanya kalau reservasi diajukan atas nama sebuah kegiatan/organisasi.`;
         }
 
+        // Selalu mulai dengan satu baris bubble kosong (Nama Barang + Qty).
+        initBarangRows();
+
         reservationForm.addEventListener('submit', async function(e) {
           e.preventDefault();
           
@@ -1101,6 +1151,7 @@
           const jamMulai = document.getElementById('jamMulaiInput').value;
           const jamSelesai = document.getElementById('jamSelesaiInput').value;
           const keperluan = document.getElementById('keperluanInput').value;
+          const barangPinjam = collectBarangList();
 
           if(!penanggungJawab){
             alert('Penanggung jawab kegiatan wajib diisi.');
@@ -1126,6 +1177,8 @@
               penyelenggara: penyelenggara || '',
               // Wajib diisi: nama penanggung jawab kegiatan.
               penanggungJawab: penanggungJawab,
+              // Opsional: daftar barang yang ingin dipinjam, tiap item { nama, qty }.
+              barangPinjam: barangPinjam,
               status: 'pending',
               createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
@@ -1133,12 +1186,78 @@
             alert("Permohonan reservasi berhasil dikirim ke database! Menunggu persetujuan admin.");
             reservationForm.reset();
             document.getElementById('tanggalInputRaw').value = '';
+            initBarangRows();
             loadMyReservations();
           } catch (err) {
             console.error("Gagal mengirim reservasi:", err);
             alert("Terjadi kesalahan saat mengirim data. Coba lagi.");
           }
         });
+      }
+
+      // ================== KOMPONEN: BARANG YANG INGIN DIPINJAM (bubble Nama + Qty berulang) ==================
+      function createBarangRow(){
+        const row = document.createElement('div');
+        row.className = 'barang-row';
+        row.innerHTML = `
+          <input type="text" class="bubble-input bubble-input-nama" placeholder="Nama barang (mis. Proyektor)">
+          <input type="text" class="bubble-input bubble-input-qty" placeholder="Qty">
+          <button type="button" class="bubble-remove" aria-label="Hapus baris barang">×</button>
+        `;
+
+        const namaInput = row.querySelector('.bubble-input-nama');
+        const removeBtn = row.querySelector('.bubble-remove');
+
+        // Tekan Enter di kolom Nama Barang -> otomatis munculkan baris bubble baru di bawahnya untuk barang berikutnya.
+        namaInput.addEventListener('keydown', function(e){
+          if(e.key === 'Enter'){
+            e.preventDefault();
+            const newRow = createBarangRow();
+            row.insertAdjacentElement('afterend', newRow);
+            newRow.querySelector('.bubble-input-nama').focus();
+          }
+        });
+
+        removeBtn.addEventListener('click', function(){
+          const container = document.getElementById('barangRowsContainer');
+          if(container.children.length > 1){
+            row.remove();
+          } else {
+            // Kalau tinggal satu baris, kosongkan saja isinya (tidak dihapus habis).
+            row.querySelector('.bubble-input-nama').value = '';
+            row.querySelector('.bubble-input-qty').value = '';
+          }
+        });
+
+        return row;
+      }
+
+      function initBarangRows(){
+        const container = document.getElementById('barangRowsContainer');
+        if(!container) return;
+        container.innerHTML = '';
+        container.appendChild(createBarangRow());
+      }
+
+      // Kumpulkan semua baris yang nama barangnya terisi (baris kosong diabaikan otomatis, sesuai sifatnya yang opsional).
+      function collectBarangList(){
+        const container = document.getElementById('barangRowsContainer');
+        if(!container) return [];
+        const list = [];
+        container.querySelectorAll('.barang-row').forEach(row => {
+          const nama = row.querySelector('.bubble-input-nama').value.trim();
+          const qty = row.querySelector('.bubble-input-qty').value.trim();
+          if(nama) list.push({ nama: nama, qty: qty || '1' });
+        });
+        return list;
+      }
+
+      // Render daftar barang (read-only) untuk ditampilkan di modal detail. Mengembalikan '' kalau kosong.
+      function renderBarangListHtml(barangPinjam){
+        if(!barangPinjam || !barangPinjam.length) return '';
+        return '<ul class="barang-list-view">' + barangPinjam.map(item =>
+          `<li><span>${escapeHtml(item.nama)}</span><span class="qty">Qty: ${escapeHtml(item.qty)}</span></li>`
+        ).join('') + '</ul>';
       }
 
       // ================== SUBTABS: UMUM / RESERVASI SAYA ==================
@@ -1233,6 +1352,15 @@
         document.getElementById('myResTanggal').textContent = data.tanggal ? formatReadableDate(data.tanggal) : '-';
         document.getElementById('myResJam').textContent = `${data.jamMulai || '-'} - ${data.jamSelesai || '-'}`;
         document.getElementById('myResKeperluan').textContent = data.keperluan || '-';
+
+        const myBarangWrap = document.getElementById('myResBarangWrap');
+        const myBarangHtml = renderBarangListHtml(data.barangPinjam);
+        if(myBarangHtml){
+          document.getElementById('myResBarangList').innerHTML = myBarangHtml;
+          myBarangWrap.style.display = 'block';
+        } else {
+          myBarangWrap.style.display = 'none';
+        }
 
         const chip = document.getElementById('myResStatusChip');
         chip.className = 'modal-status-chip ' + (chipClassMap[data.status] || 'empty');
@@ -1421,6 +1549,15 @@
         document.getElementById('detailRole').textContent = data.pengajuRole || '-';
         document.getElementById('detailPenyelenggara').textContent = data.penyelenggara ? data.penyelenggara : '(tidak diisi)';
         document.getElementById('detailPenanggungJawab').textContent = data.penanggungJawab || '-';
+
+        const barangWrap = document.getElementById('detailBarangWrap');
+        const barangHtml = renderBarangListHtml(data.barangPinjam);
+        if(barangHtml){
+          document.getElementById('detailBarangList').innerHTML = barangHtml;
+          barangWrap.style.display = 'block';
+        } else {
+          barangWrap.style.display = 'none';
+        }
         document.getElementById('detailTanggal').textContent = data.tanggal ? formatReadableDate(data.tanggal) : '-';
         document.getElementById('detailJam').textContent = `${data.jamMulai || '-'} - ${data.jamSelesai || '-'}`;
         document.getElementById('detailKeperluan').textContent = data.keperluan || '-';

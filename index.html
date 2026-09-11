@@ -802,17 +802,7 @@
               <div id="barangRowsContainer" class="barang-rows"></div>
               <p style="font-size:12px; color: var(--ink-soft); margin-top:8px;">Ketik nama barang, lalu tekan <strong>Enter</strong> di kolom nama untuk menambah baris barang berikutnya. Isi kolom Qty secara manual.</p>
             </div>
-            <div class="form-group">
-              <label>Lampiran File (opsional)</label>
-              <input type="file" id="fileUploadInput">
-              <p style="font-size:12px; color: var(--ink-soft); margin-top:6px;">Boleh file apa saja (PDF, gambar, dokumen proposal, dll). Maksimal 10MB.</p>
-              <div id="fileUploadPreview" style="display:none; margin-top:8px; padding:8px 12px; background: rgba(31,59,50,0.04); border-radius:8px; font-size:13px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
-                <span id="fileUploadPreviewName" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
-                <button type="button" id="fileUploadRemoveBtn" style="background:none; border:none; color: var(--danger); font-weight:600; cursor:pointer; font-size:12px; flex-shrink:0;">Hapus</button>
-              </div>
-              <div id="fileUploadProgress" style="display:none; margin-top:8px; font-size:12px; color: var(--chalk-gold-dim);">Mengunggah file... <span id="fileUploadProgressPct">0%</span></div>
-            </div>
-            <button type="submit" class="btn-submit" id="reservationSubmitBtn">Ajukan Reservasi</button>
+            <button type="submit" class="btn-submit">Ajukan Reservasi</button>
           </form>
         </div>
         <div class="card">
@@ -1053,14 +1043,6 @@
         <div id="detailBarangList"></div>
       </div>
 
-      <div id="detailFileWrap" style="margin-top: 14px; display:none;">
-        <label style="display:block; font-size:12px; font-weight:600; color: var(--ink-soft); margin-bottom:4px;">Lampiran File</label>
-        <a id="detailFileLink" href="#" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:8px; padding:9px 14px; background: rgba(31,59,50,0.06); border-radius:8px; font-size:13.5px; font-weight:600; color: var(--ink); text-decoration:none;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px; height:16px; flex-shrink:0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
-          <span id="detailFileName">Lihat File</span>
-        </a>
-      </div>
-
       <div style="display:flex; gap:12px; margin-top: 24px;">
         <button id="detailBtnApprove" class="btn-sm btn-approve" style="flex:1; padding:11px; font-size:13.5px;" type="button">Setujui</button>
         <button id="detailBtnReject" class="btn-sm btn-reject" style="flex:1; padding:11px; font-size:13.5px;" type="button">Tolak</button>
@@ -1136,14 +1118,6 @@
           <div id="myResBarangList"></div>
         </div>
 
-        <div id="myResFileWrap" style="display:none;">
-          <label style="display:block; font-size:12px; font-weight:600; color: var(--ink-soft); margin-bottom:4px;">Lampiran File</label>
-          <a id="myResFileLink" href="#" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:8px; padding:9px 14px; background: rgba(31,59,50,0.06); border-radius:8px; font-size:13.5px; font-weight:600; color: var(--ink); text-decoration:none;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px; height:16px; flex-shrink:0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
-            <span id="myResFileName">Lihat File</span>
-          </a>
-        </div>
-
         <div id="myResApprovedInfo" class="info-callout approved" style="display:none;">
           <strong>Disetujui oleh</strong>
           <span id="myResApprovedBy">-</span>
@@ -1160,7 +1134,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
   <script>
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz5Qd9asciIBDWFwz-mgN25PvcN9IV64T7XPLbyGKOAjq81njRYdd2bq5rhu_ZltOyX/exec";
@@ -1179,7 +1152,6 @@
       firebase.initializeApp(firebaseConfig);
     }
     const db = firebase.firestore();
-    const storage = firebase.storage();
 
     document.addEventListener('DOMContentLoaded', function() {
       // 1. Cek localStorage dulu (buat tampilan cepat / non-security)
@@ -1327,40 +1299,6 @@
         // Selalu mulai dengan satu baris bubble kosong (Nama Barang + Qty).
         initBarangRows();
 
-        // ================== PREVIEW FILE LAMPIRAN ==================
-        const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
-        const fileUploadInput = document.getElementById('fileUploadInput');
-        const fileUploadPreview = document.getElementById('fileUploadPreview');
-        const fileUploadPreviewName = document.getElementById('fileUploadPreviewName');
-        const fileUploadRemoveBtn = document.getElementById('fileUploadRemoveBtn');
-
-        function formatFileSize(bytes){
-          if(bytes < 1024) return bytes + ' B';
-          if(bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-          return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-        }
-
-        fileUploadInput.addEventListener('change', () => {
-          const file = fileUploadInput.files[0];
-          if(!file){
-            fileUploadPreview.style.display = 'none';
-            return;
-          }
-          if(file.size > MAX_FILE_SIZE_BYTES){
-            alert('Ukuran file maksimal 10MB. File kamu: ' + formatFileSize(file.size));
-            fileUploadInput.value = '';
-            fileUploadPreview.style.display = 'none';
-            return;
-          }
-          fileUploadPreviewName.textContent = `${file.name} (${formatFileSize(file.size)})`;
-          fileUploadPreview.style.display = 'flex';
-        });
-
-        fileUploadRemoveBtn.addEventListener('click', () => {
-          fileUploadInput.value = '';
-          fileUploadPreview.style.display = 'none';
-        });
-
         reservationForm.addEventListener('submit', async function(e) {
           e.preventDefault();
           
@@ -1389,43 +1327,8 @@
             return;
           }
 
-          const submitBtn = document.getElementById('reservationSubmitBtn');
-          const originalBtnText = submitBtn.textContent;
-          submitBtn.disabled = true;
-
           try {
-            // Bikin referensi dokumen dulu (dapat ID-nya) SEBELUM ditulis ke Firestore,
-            // supaya file di Storage bisa disimpan di folder yang namanya = ID reservasi ini.
-            const docRef = db.collection('reservasi').doc();
-
-            let fileUrl = null;
-            let fileName = null;
-            const selectedFile = fileUploadInput.files[0];
-
-            if(selectedFile){
-              submitBtn.textContent = 'Mengunggah file...';
-              document.getElementById('fileUploadProgress').style.display = 'block';
-
-              const storageRef = storage.ref(`reservasi_files/${docRef.id}/${selectedFile.name}`);
-              const uploadTask = storageRef.put(selectedFile);
-
-              fileUrl = await new Promise((resolve, reject) => {
-                uploadTask.on('state_changed',
-                  (snapshot) => {
-                    const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-                    document.getElementById('fileUploadProgressPct').textContent = pct + '%';
-                  },
-                  (err) => reject(err),
-                  async () => resolve(await uploadTask.snapshot.ref.getDownloadURL())
-                );
-              });
-              fileName = selectedFile.name;
-              document.getElementById('fileUploadProgress').style.display = 'none';
-            }
-
-            submitBtn.textContent = 'Menyimpan reservasi...';
-
-            await docRef.set({
+            await db.collection('reservasi').add({
               tanggal: tanggal,
               jamMulai: jamMulai,
               jamSelesai: jamSelesai,
@@ -1441,9 +1344,6 @@
               penanggungJawab: penanggungJawab,
               // Opsional: daftar barang yang ingin dipinjam, tiap item { nama, qty }.
               barangPinjam: barangPinjam,
-              // Opsional: lampiran file (proposal, surat izin, dll).
-              fileUrl: fileUrl,
-              fileName: fileName,
               status: 'pending',
               createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
@@ -1451,15 +1351,11 @@
             alert("Permohonan reservasi berhasil dikirim ke database! Menunggu persetujuan admin.");
             reservationForm.reset();
             document.getElementById('tanggalInputRaw').value = '';
-            fileUploadPreview.style.display = 'none';
             initBarangRows();
             loadMyReservations();
           } catch (err) {
             console.error("Gagal mengirim reservasi:", err);
             alert("Terjadi kesalahan saat mengirim data. Coba lagi.");
-          } finally {
-            submitBtn.disabled = false;
-            submitBtn.textContent = originalBtnText;
           }
         });
       }
@@ -1629,15 +1525,6 @@
           myBarangWrap.style.display = 'block';
         } else {
           myBarangWrap.style.display = 'none';
-        }
-
-        const myFileWrap = document.getElementById('myResFileWrap');
-        if(data.fileUrl){
-          document.getElementById('myResFileLink').href = data.fileUrl;
-          document.getElementById('myResFileName').textContent = data.fileName || 'Lihat File';
-          myFileWrap.style.display = 'block';
-        } else {
-          myFileWrap.style.display = 'none';
         }
 
         const chip = document.getElementById('myResStatusChip');
@@ -1839,15 +1726,6 @@
         document.getElementById('detailTanggal').textContent = data.tanggal ? formatReadableDate(data.tanggal) : '-';
         document.getElementById('detailJam').textContent = `${data.jamMulai || '-'} - ${data.jamSelesai || '-'}`;
         document.getElementById('detailKeperluan').textContent = data.keperluan || '-';
-
-        const fileWrap = document.getElementById('detailFileWrap');
-        if(data.fileUrl){
-          document.getElementById('detailFileLink').href = data.fileUrl;
-          document.getElementById('detailFileName').textContent = data.fileName || 'Lihat File';
-          fileWrap.style.display = 'block';
-        } else {
-          fileWrap.style.display = 'none';
-        }
 
         const btnSetujui = document.getElementById('detailBtnApprove');
         const btnTolak = document.getElementById('detailBtnReject');

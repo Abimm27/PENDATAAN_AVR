@@ -279,6 +279,11 @@
   .cal-day.empty-cell { visibility: hidden; cursor: default; }
   .cal-day.today { border-color: var(--chalk-gold-dim); border-width: 2px; }
   .cal-day .day-num { font-weight: 600; }
+  .cal-day-top { display: flex; align-items: flex-start; justify-content: space-between; width: 100%; gap: 4px; }
+  .cal-kelas-dots { display: flex; gap: 3px; flex-wrap: wrap; justify-content: flex-end; margin-top: 1px; }
+  .cal-kelas-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .rundown-kelas-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
+  .rundown-kelas-caption { font-size: 11.5px; font-weight: 600; color: var(--ink-soft); }
   .cal-day .day-status-dot { width: 8px; height: 8px; border-radius: 2px; align-self: flex-end; }
   .cal-day.status-approved { background: rgba(58,139,92,0.1); border-color: rgba(58,139,92,0.4); }
   .cal-day.status-approved .day-status-dot { background: var(--success); }
@@ -1056,6 +1061,9 @@
     function initDashboard(savedRole) {
       document.getElementById('displayRole').textContent = savedRole;
       const savedName = localStorage.getItem('userName');
+      // Kelas si pengaju (mis. "A","B","C","D", atau "Guru"/"Admin" untuk akun non-siswa) — dipakai untuk
+      // menentukan warna titik penanda kelas di Kalender Kegiatan.
+      const savedKelas = localStorage.getItem('userKelas');
       if (savedName) {
         document.getElementById('displayRole').textContent = `${savedName} (${savedRole})`;
       }
@@ -1173,6 +1181,8 @@
               // Identitas utama SELALU dari akun terverifikasi saat login (tidak bisa diketik bebas oleh pengaju).
               peminjam: savedName || savedRole,
               pengajuRole: savedRole,
+              // Kelas akun (A/B/C/D/Guru/Admin) — dipakai untuk titik warna penanda kelas di Kalender Kegiatan.
+              kelas: savedKelas || '',
               // Field opsional: nama kegiatan/organisasi yang diwakili, sekadar info tambahan (bukan identitas).
               penyelenggara: penyelenggara || '',
               // Wajib diisi: nama penanggung jawab kegiatan.
@@ -1871,6 +1881,30 @@
       setupTimePicker({ fieldId: 'jamMulaiField', displayId: 'jamMulaiInput', panelId: 'jamMulaiPanel' });
       setupTimePicker({ fieldId: 'jamSelesaiField', displayId: 'jamSelesaiInput', panelId: 'jamSelesaiPanel' });
 
+      // ================== FITUR: TITIK WARNA PENANDA KELAS DI KALENDER ==================
+      // Menentukan warna titik berdasarkan kolom "kelas" di database User (disimpan ke tiap reservasi saat diajukan).
+      // Aturan warna: kelas A/B -> biru, kelas C/D -> ungu, Guru/Admin -> coklat, selain itu -> abu-abu (tidak dikenali).
+      function getKelasDotColor(kelas, role){
+        const k = (kelas || '').toString().trim().toLowerCase();
+        const r = (role || '').toString().trim().toLowerCase();
+
+        if (k === 'guru' || k === 'admin' || r === 'guru' || r === 'admin') {
+          return { color: '#8a5a35', label: kelas || (r === 'admin' ? 'Admin' : 'Guru') };
+        }
+
+        // Ambil huruf kelas terakhir dari string kelas (menangani format seperti "7A", "X IPA A", atau cuma "A").
+        const letters = k.match(/[a-d]/g);
+        const lastLetter = letters ? letters[letters.length - 1] : '';
+
+        if (lastLetter === 'a' || lastLetter === 'b') {
+          return { color: '#2e6bd8', label: 'Kelas ' + (kelas || lastLetter.toUpperCase()) };
+        }
+        if (lastLetter === 'c' || lastLetter === 'd') {
+          return { color: '#7c3aed', label: 'Kelas ' + (kelas || lastLetter.toUpperCase()) };
+        }
+        return { color: '#9aa39d', label: kelas || 'Tidak diketahui' };
+      }
+
       async function fetchCalendarDataFromFirestore(year, month){
         const data = {};
         const startDate = formatDateKey(year, month, 1);
@@ -1892,8 +1926,11 @@
             if (isEventFinished(item.tanggal, item.jamSelesai)) return;
 
             if (!data[dateStr]) {
-              data[dateStr] = { status: 'empty', items: [] };
+              data[dateStr] = { status: 'empty', items: [], kelasDotsMap: {} };
             }
+
+            const dotInfo = getKelasDotColor(item.kelas, item.pengajuRole);
+            data[dateStr].kelasDotsMap[dotInfo.color] = dotInfo.label;
 
             // Masukkan rundown/kegiatan
             data[dateStr].items.push({
@@ -1902,7 +1939,11 @@
               note: `Peminjam: ${item.peminjam || 'Umum'} (${item.status})`,
               jamMulai: item.jamMulai || '',
               jamSelesai: item.jamSelesai || '',
-              rawStatus: item.status
+              rawStatus: item.status,
+              kelas: item.kelas || '',
+              role: item.pengajuRole || '',
+              // "Atas Nama Kegiatan" dari form reservasi -> jadi keterangan di sebelah titik warna.
+              penyelenggara: item.penyelenggara || ''
             });
 
             // Tentukan prioritas status hari (jika ada approved, prioritaskan approved)
@@ -1934,11 +1975,17 @@
         for(let i = 0; i < firstDay; i++){ html += '<div class="cal-day empty-cell"></div>'; }
         for(let d = 1; d <= daysInMonth; d++){
           const dateStr = formatDateKey(year, month, d);
-          const info = monthData[dateStr] || { status: 'empty', items: [] };
+          const info = monthData[dateStr] || { status: 'empty', items: [], kelasDotsMap: {} };
           const isToday = dateStr === todayStr;
+          const kelasDotsHtml = Object.entries(info.kelasDotsMap || {})
+            .map(([color, label]) => `<span class="cal-kelas-dot" style="background:${color};" title="${escapeHtml(label)}"></span>`)
+            .join('');
           html += `
             <div class="cal-day status-${info.status}${isToday ? ' today' : ''}" data-date="${dateStr}">
-              <span class="day-num">${d}</span>
+              <div class="cal-day-top">
+                <span class="day-num">${d}</span>
+                <span class="cal-kelas-dots">${kelasDotsHtml}</span>
+              </div>
               <span class="day-status-dot"></span>
             </div>`;
         }
@@ -2011,11 +2058,18 @@
           if(dateStr === todayStr && item.rawStatus === 'approved' && isEventOngoingNow(dateStr, item.jamMulai, item.jamSelesai)){
             ongoingBadge = '<div style="color: var(--danger); font-weight:700; font-size:11px; margin-bottom:2px;">● SEDANG BERLANGSUNG</div>';
           }
+          const dotInfo = getKelasDotColor(item.kelas, item.role);
+          const captionText = item.penyelenggara ? item.penyelenggara : dotInfo.label;
           return `
             <div class="rundown-item">
               <div class="rundown-time">${escapeHtml(item.time)}</div>
               <div class="rundown-info">
-                ${ongoingBadge}<h4>${escapeHtml(item.title)}</h4>
+                ${ongoingBadge}
+                <div style="display:flex; align-items:center; gap:6px; margin-bottom:3px;">
+                  <span class="rundown-kelas-dot" style="background:${dotInfo.color};" title="${escapeHtml(dotInfo.label)}"></span>
+                  <span class="rundown-kelas-caption">${escapeHtml(captionText)}</span>
+                </div>
+                <h4>${escapeHtml(item.title)}</h4>
                 <p>${escapeHtml(item.note) || ''}</p>
               </div>
             </div>

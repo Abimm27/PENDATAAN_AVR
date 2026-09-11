@@ -260,31 +260,38 @@
   }
   .cal-day {
     position: relative;
-    aspect-ratio: 1 / 0.85;
+    min-height: 96px;
     border-radius: 10px;
     border: 1.5px solid rgba(31,59,50,0.12);
     background: #fff;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    justify-content: space-between;
-    padding: 7px 8px;
+    justify-content: flex-start;
+    padding: 7px 8px 8px;
     cursor: pointer;
     font-family: 'IBM Plex Mono', monospace;
     font-size: 12.5px;
     color: var(--ink);
     transition: transform 0.15s ease, box-shadow 0.15s ease;
+    gap: 4px;
   }
   .cal-day:hover { transform: translateY(-2px); box-shadow: 0 8px 16px -8px rgba(31,59,50,0.35); }
   .cal-day.empty-cell { visibility: hidden; cursor: default; }
   .cal-day.today { border-color: var(--chalk-gold-dim); border-width: 2px; }
   .cal-day .day-num { font-weight: 600; }
   .cal-day-top { display: flex; align-items: flex-start; justify-content: space-between; width: 100%; gap: 4px; }
-  .cal-kelas-dots { display: flex; gap: 3px; flex-wrap: wrap; justify-content: flex-end; margin-top: 1px; }
-  .cal-kelas-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .cal-events { display: flex; flex-direction: column; gap: 3px; width: 100%; overflow: hidden; }
+  .cal-event-line { display: flex; align-items: center; gap: 5px; width: 100%; overflow: hidden; }
+  .cal-event-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .cal-event-label {
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 10.5px; font-weight: 600;
+    color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .cal-event-more { font-family: 'IBM Plex Sans', sans-serif; font-size: 10px; color: var(--ink-soft); }
   .rundown-kelas-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
   .rundown-kelas-caption { font-size: 11.5px; font-weight: 600; color: var(--ink-soft); }
-  .cal-day .day-status-dot { width: 8px; height: 8px; border-radius: 2px; align-self: flex-end; }
+  .cal-day .day-status-dot { width: 8px; height: 8px; border-radius: 2px; position: absolute; right: 8px; bottom: 7px; }
   .cal-day.status-approved { background: rgba(58,139,92,0.1); border-color: rgba(58,139,92,0.4); }
   .cal-day.status-approved .day-status-dot { background: var(--success); }
   .cal-day.status-pending { background: rgba(232,185,78,0.18); border-color: rgba(232,185,78,0.5); }
@@ -1975,17 +1982,35 @@
         for(let i = 0; i < firstDay; i++){ html += '<div class="cal-day empty-cell"></div>'; }
         for(let d = 1; d <= daysInMonth; d++){
           const dateStr = formatDateKey(year, month, d);
-          const info = monthData[dateStr] || { status: 'empty', items: [], kelasDotsMap: {} };
+          const info = monthData[dateStr] || { status: 'empty', items: [] };
           const isToday = dateStr === todayStr;
-          const kelasDotsHtml = Object.entries(info.kelasDotsMap || {})
-            .map(([color, label]) => `<span class="cal-kelas-dot" style="background:${color};" title="${escapeHtml(label)}"></span>`)
-            .join('');
+
+          // Urutkan kegiatan hari itu berdasarkan jam mulai, lalu tampilkan langsung di dalam kotak tanggal
+          // (titik warna kelas + nama kegiatan + jam pemakaian), bukan cuma titik kecil di pojok.
+          const sortedItems = (info.items || []).slice().sort((a, b) => (a.jamMulai || '').localeCompare(b.jamMulai || ''));
+          const maxVisible = 3;
+          const visibleItems = sortedItems.slice(0, maxVisible);
+          const extraCount = sortedItems.length - visibleItems.length;
+
+          const eventsHtml = visibleItems.map(item => {
+            const dotInfo = getKelasDotColor(item.kelas, item.role);
+            const label = item.penyelenggara ? item.penyelenggara : dotInfo.label;
+            const timeShort = item.jamMulai ? `${item.jamMulai}-${item.jamSelesai}` : '';
+            const fullTitle = timeShort ? `${label} (${timeShort})` : label;
+            return `
+              <div class="cal-event-line" title="${escapeHtml(fullTitle)}">
+                <span class="cal-event-dot" style="background:${dotInfo.color};"></span>
+                <span class="cal-event-label">${escapeHtml(label)}${timeShort ? ' · ' + escapeHtml(timeShort) : ''}</span>
+              </div>`;
+          }).join('');
+          const moreHtml = extraCount > 0 ? `<div class="cal-event-more">+${extraCount} lainnya</div>` : '';
+
           html += `
             <div class="cal-day status-${info.status}${isToday ? ' today' : ''}" data-date="${dateStr}">
               <div class="cal-day-top">
                 <span class="day-num">${d}</span>
-                <span class="cal-kelas-dots">${kelasDotsHtml}</span>
               </div>
+              <div class="cal-events">${eventsHtml}${moreHtml}</div>
               <span class="day-status-dot"></span>
             </div>`;
         }
